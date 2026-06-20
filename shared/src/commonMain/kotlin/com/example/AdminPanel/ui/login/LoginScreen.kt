@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.AdminPanel.data.getConnectivityService
+import com.example.AdminPanel.data.session.SessionManager
 import com.example.AdminPanel.ui.login.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
+
+    var rememberChecked by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
@@ -131,11 +135,13 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = false, onCheckedChange = {})
+                        Checkbox(
+                            checked = rememberChecked,
+                            onCheckedChange = { isChecked ->
+                            rememberChecked = isChecked
+                            }
+                        )
                         Text("Remember me")
-                    }
-                    TextButton(onClick = {}) {
-                        Text("Forgot password?", color = Color(0xFF0D47A1))
                     }
                 }
 
@@ -155,7 +161,6 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                     enabled = !uiState.isLoading
                 ) {
                     if (uiState.isLoading) {
-                        onLoginSuccess()
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
                     } else {
                         Text("Log In", fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -163,25 +168,6 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    HorizontalDivider(modifier = Modifier.weight(1f))
-                    Text("or", modifier = Modifier.padding(horizontal = 16.dp), color = Color.Gray)
-                    HorizontalDivider(modifier = Modifier.weight(1f))
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                OutlinedButton(
-                    onClick = {},
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text("Log in with Google", color = Color.Black)
-                }
-
-                Spacer(modifier = Modifier.height(64.dp))
-                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -190,55 +176,6 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                     Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
                     Text(" Secure login with JWT authentication", fontSize = 12.sp, color = Color.Gray)
                 }
-            }
-        }
-    }
-}
-
-data class LoginUiState(
-    val username: String = "",
-    val password: String = "",
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val isLoggedIn: Boolean = false
-)
-
-class LoginViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(LoginUiState())
-    val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
-
-    private val connectivityService = getConnectivityService()
-
-    fun onUsernameChange(username: String) {
-        _uiState.value = _uiState.value.copy(username = username, error = null)
-    }
-
-    fun onPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(password = password, error = null)
-    }
-
-    fun login() {
-        val currentState = _uiState.value
-        if (currentState.username.isBlank() || currentState.password.isBlank()) {
-            _uiState.value = currentState.copy(error = "Username and password cannot be empty")
-            return
-        }
-
-        if (!connectivityService.isConnected()) {
-            _uiState.value = currentState.copy(error = "No internet connection")
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.value = currentState.copy(isLoading = true, error = null)
-
-            // Mocking API call
-            delay(1500)
-
-            if (currentState.username == "admin" && currentState.password == "admin") {
-                _uiState.value = _uiState.value.copy(isLoading = false, isLoggedIn = true)
-            } else {
-                _uiState.value = _uiState.value.copy(isLoading = false, error = "Invalid credentials")
             }
         }
     }

@@ -18,11 +18,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.example.kmp_test.MainKt"
+        mainClass = "com.example.AdminPanel.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.example.kmp_test"
+            packageName = "com.example.AdminPanel"
             packageVersion = "1.0.0"
         }
     }

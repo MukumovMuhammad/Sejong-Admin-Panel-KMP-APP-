@@ -9,5 +9,7 @@ fun main() = application {
         title = "KMP_Test",
     ) {
         App()
+
+
     }
 }

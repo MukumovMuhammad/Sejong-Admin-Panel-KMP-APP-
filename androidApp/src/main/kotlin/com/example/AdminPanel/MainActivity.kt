@@ -14,12 +14,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             App()
+
+
         }
     }
-}
-
-@Preview
-@Composable
-fun AppAndroidPreview() {
-    App()
 }
