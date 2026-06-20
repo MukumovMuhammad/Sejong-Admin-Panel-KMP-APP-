@@ -23,7 +23,7 @@ object HttpClientFactory {
         }
 
         defaultRequest {
-            url("BASE_URL")
+            url("/")
             SessionManager.token?.let {
                 header("Authorization", "Bearer $it")
             }

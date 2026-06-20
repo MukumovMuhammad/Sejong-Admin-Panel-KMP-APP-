@@ -24,19 +24,22 @@ class LoginViewModel : ViewModel() {
     private val connectivityService = getConnectivityService()
     private val authApi = AuthApi(HttpClientFactory.create())
 
-    fun onUsernameChange(username: String) {
-        _uiState.value = _uiState.value.copy(username = username, error = null)
+    init {
+        if (SessionManager.rememberMe){
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                isLoggedIn = true,
+                status = SessionManager.status,
+                verificationStatus = SessionManager.verificationStatus
+            )
+        }
     }
 
-    fun onPasswordChange(password: String) {
-        _uiState.value = _uiState.value.copy(password = password, error = null)
-    }
-
-    fun login() {
+    fun login(username: String, password:String,rememberUser: Boolean) {
 
         val currentState = _uiState.value
-        print("LoginViewModel: Login with ${currentState.username} and ${currentState.password}")
-        if (currentState.username.isBlank() || currentState.password.isBlank()) {
+        print("LoginViewModel: Login with ${username} and ${password}")
+        if (username.isBlank() || password.isBlank()) {
             _uiState.value = currentState.copy(error = "Username and password cannot be empty")
             return
         }
@@ -51,8 +54,8 @@ class LoginViewModel : ViewModel() {
 
             try {
                 val response = authApi.login(
-                    username = currentState.username,
-                    password = currentState.password
+                    username = username,
+                    password = password
                 )
 
                 when (response.status) {
@@ -61,6 +64,7 @@ class LoginViewModel : ViewModel() {
                         println("Login fetch the status is ok!")
                         val loginResponse = response.body<LoginResponse>()
                         println("The response is ${loginResponse}")
+                        SessionManager.rememberMe = rememberUser
                         SessionManager.token = loginResponse.token
                         SessionManager.status = loginResponse.status
                         SessionManager.verificationStatus = loginResponse.verificationStatus
@@ -99,19 +103,26 @@ class LoginViewModel : ViewModel() {
     }
 
     fun logout() {
-        viewModelScope.launch {
-            try {
-                val response = authApi.logout()
-                if (response.status == HttpStatusCode.OK) {
-                    SessionManager.clear()
-                    _uiState.value = LoginUiState()
-                } else {
-                    val errorResponse = response.body<ErrorResponse>()
-                    _uiState.value = _uiState.value.copy(error = errorResponse.error)
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = e.message ?: "Logout failed")
-            }
-        }
+        SessionManager.clearSession()
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            isLoggedIn = false,
+            status = SessionManager.status,
+            verificationStatus = SessionManager.verificationStatus
+        )
+//        viewModelScope.launch {
+//            try {
+//                val response = authApi.logout()
+//                if (response.status == HttpStatusCode.OK) {
+//                    SessionManager.clearSession()
+//                    _uiState.value = LoginUiState()
+//                } else {
+//                    val errorResponse = response.body<ErrorResponse>()
+//                    _uiState.value = _uiState.value.copy(error = errorResponse.error)
+//                }
+//            } catch (e: Exception) {
+//                _uiState.value = _uiState.value.copy(error = e.message ?: "Logout failed")
+//            }
+//        }
     }
 }

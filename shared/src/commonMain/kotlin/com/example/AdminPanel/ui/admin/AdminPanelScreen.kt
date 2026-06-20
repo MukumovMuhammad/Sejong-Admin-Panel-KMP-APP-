@@ -9,17 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,13 +20,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.AdminPanel.ui.profile.SettingsScreen
+import com.example.AdminPanel.ui.components.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 
 @Composable
-fun AdminPanelScreen(viewModel: AdminViewModel) {
+fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     val sidebarWidth by animateDpAsState(if (uiState.isSidebarExpanded) 250.dp else 80.dp)
 
-    Row(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FB))) {
+    Row(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // Sidebar
         Sidebar(
             expanded = uiState.isSidebarExpanded,
@@ -53,8 +48,37 @@ fun AdminPanelScreen(viewModel: AdminViewModel) {
             TopBar(selectedTab = uiState.selectedTab)
             Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
                 when (uiState.selectedTab) {
-                    AdminTab.Dashboard -> DashboardContent()
-                    else -> PlaceholderContent(uiState.selectedTab.name)
+                    AdminTab.Dashboard -> {
+                        val dashboardViewModel: DashboardViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer { DashboardViewModel() }
+                            }
+                        )
+                        DashboardContent(dashboardViewModel)
+                    }
+                    AdminTab.Users -> PlaceholderContent("Users")
+                    AdminTab.PendingApprovals -> PlaceholderContent("Pending Approvals")
+                    AdminTab.Groups -> PlaceholderContent("Groups")
+                    AdminTab.Schedules -> PlaceholderContent("Schedules")
+                    AdminTab.Announcements -> {
+                        val announcementsViewModel: AnnouncementsViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer { AnnouncementsViewModel() }
+                            }
+                        )
+                        AnnouncementsContent(announcementsViewModel)
+                    }
+                    AdminTab.Notifications -> PlaceholderContent("Notifications")
+                    AdminTab.ELibrary -> PlaceholderContent("E-Library")
+                    AdminTab.Settings -> {
+                        SettingsScreen (
+                            onBackClick = {},
+                            onLogoutClick = {
+                                onLogOut()
+                            }
+                        )
+                    }
+                    AdminTab.ActivityLogs -> PlaceholderContent("Activity Logs")
                 }
             }
         }
@@ -75,7 +99,7 @@ fun Sidebar(
         modifier = Modifier
             .width(width)
             .fillMaxHeight()
-            .background(Color(0xFF0D47A1))
+            .background(MaterialTheme.colorScheme.primary)
             .padding(vertical = 24.dp)
     ) {
         // Logo / Brand
@@ -90,7 +114,7 @@ fun Sidebar(
                     .background(Color.White, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("S", color = Color(0xFF0D47A1), fontWeight = FontWeight.Bold)
+                Text("S", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
             if (expanded) {
                 Spacer(modifier = Modifier.width(12.dp))
@@ -200,12 +224,12 @@ fun TopBar(selectedTab: AdminTab) {
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp)
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(selectedTab.name, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        HeaderText(selectedTab.name)
         
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
@@ -214,80 +238,15 @@ fun TopBar(selectedTab: AdminTab) {
                 placeholder = { Text("Search anything...") },
                 modifier = Modifier.width(300.dp),
                 shape = CircleShape,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
             )
             Spacer(modifier = Modifier.width(16.dp))
             IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = null) }
             IconButton(onClick = {}) { Icon(Icons.Default.Star, contentDescription = null) }
-        }
-    }
-}
-
-@Composable
-fun DashboardContent() {
-    Column {
-        Text("Welcome back, Admin!", fontSize = 16.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            StatCard("Total Users", "542", "+16 this week", Icons.Default.Person, Modifier.weight(1f))
-            StatCard("Students", "426", "+8 this week", Icons.Default.Search, Modifier.weight(1f))
-            StatCard("Teachers", "48", "+2 this week", Icons.Default.AccountBox, Modifier.weight(1f))
-            StatCard("Pending Approvals", "9", "-3 this week", Icons.Default.Person, Modifier.weight(1f))
-            StatCard("Groups", "12", "No change", Icons.Default.List, Modifier.weight(1f))
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            // Placeholder for Chart
-            Box(
-                modifier = Modifier
-                    .weight(2f)
-                    .fillMaxHeight()
-                    .background(Color.White, RoundedCornerShape(16.dp))
-                    .padding(24.dp)
-            ) {
-                Text("Users Overview (Mock Chart)", fontWeight = FontWeight.Bold)
-            }
-            
-            // Placeholder for Distribution
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .background(Color.White, RoundedCornerShape(16.dp))
-                    .padding(24.dp)
-            ) {
-                Text("User Status Distribution", fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun StatCard(title: String, value: String, change: String, icon: ImageVector, modifier: Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(40.dp).background(Color(0xFFE3F2FD), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(icon, contentDescription = null, tint = Color(0xFF0D47A1))
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(title, fontSize = 12.sp, color = Color.Gray)
-                    Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(change, fontSize = 10.sp, color = if (change.startsWith("+")) Color.Green else if (change.startsWith("-")) Color.Red else Color.Gray)
         }
     }
 }

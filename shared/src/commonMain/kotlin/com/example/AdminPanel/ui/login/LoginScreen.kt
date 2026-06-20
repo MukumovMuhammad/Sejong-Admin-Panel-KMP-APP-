@@ -27,11 +27,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+import com.example.AdminPanel.ui.components.*
+
 @Composable
 fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
 
     var rememberChecked by remember { mutableStateOf(false) }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
 
     LaunchedEffect(uiState.isLoggedIn) {
@@ -46,31 +50,29 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(1f)
-                .background(Color(0xFF0D47A1)), // Deep Blue
+                .background(MaterialTheme.colorScheme.primary), // Use Theme Primary
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Mock Logo
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(48.dp)) {
+                // Logo
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
-                        .background(Color.White, shape = RoundedCornerShape(16.dp)),
+                        .size(120.dp)
+                        .background(Color.White, shape = RoundedCornerShape(24.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Logo", color = Color(0xFF0D47A1), fontWeight = FontWeight.Bold)
+                    Text("S", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
                 }
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
+                Spacer(modifier = Modifier.height(32.dp))
+                HeaderText(
                     "Admin Panel",
                     color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
-                Text(
-                    "Manage users, classes, schedules,\nannouncements and more.",
+                Spacer(modifier = Modifier.height(16.dp))
+                BodyText(
+                    "Manage users, classes, schedules, announcements and more.",
                     color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(top = 16.dp),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
@@ -81,52 +83,39 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(1.2f)
-                .background(Color.White),
+                .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 400.dp)
-                    .padding(32.dp),
+                    .widthIn(max = 440.dp)
+                    .padding(48.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                Text(
-                    "Welcome back!",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Text(
+                HeaderText("Welcome back!")
+                SubHeaderText(
                     "Sign in to continue to Sejong Admin Panel",
-                    fontSize = 16.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                    modifier = Modifier.padding(top = 8.dp, bottom = 40.dp)
                 )
 
-                Text("Username", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 8.dp))
-                OutlinedTextField(
-                    value = uiState.username,
-                    onValueChange = viewModel::onUsernameChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Enter your username") },
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(8.dp)
+                AppTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = "Username",
+                    placeholder = "Enter your username",
+                    leadingIcon = Icons.Default.Email,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                Text("Password", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 8.dp))
-                OutlinedTextField(
-                    value = uiState.password,
-                    onValueChange = viewModel::onPasswordChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Enter your password") },
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                    trailingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(8.dp)
+                AppPasswordTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = "Password",
+                    placeholder = "Enter your password",
+                    leadingIcon = Icons.Default.Lock,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Row(
@@ -137,11 +126,12 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = rememberChecked,
-                            onCheckedChange = { isChecked ->
-                            rememberChecked = isChecked
-                            }
+                            onCheckedChange = { rememberChecked = it }
                         )
-                        Text("Remember me")
+                        Text("Remember me", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    TextButton(onClick = {}) {
+                        Text("Forgot password?", color = MaterialTheme.colorScheme.primary)
                     }
                 }
 
@@ -149,25 +139,18 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                     Text(
                         uiState.error!!,
                         color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                 }
 
-                Button(
-                    onClick = viewModel::login,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D47A1)),
-                    enabled = !uiState.isLoading
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                    } else {
-                        Text("Log In", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
+                PrimaryButton(
+                    text = "Log In",
+                    onClick = { viewModel.login(username, password, rememberChecked) },
+                    isLoading = uiState.isLoading
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
@@ -180,3 +163,4 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
         }
     }
 }
+

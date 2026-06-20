@@ -1,41 +1,45 @@
 package com.example.AdminPanel.data.session
 
-
-
-import androidx.compose.ui.graphics.Paint
 import com.russhwolf.settings.Settings
 
 object SessionManager {
     private val settings = Settings()
-    var token: String? = null
-    var status: String? = null
-    var verificationStatus: String? = null
 
-    fun setTokenStatus( token: String, status: String){
-        settings.putString("token", token)
-        settings.putString("status", status)
-        settings.putBoolean("is_logged_in", true)
-    }
+    // 1. Remember Me State (Saves if the user checked the box)
+    var rememberMe: Boolean
+        get() = settings.getBoolean("remember_me", false)
+        set(value) = settings.putBoolean("remember_me", value)
 
+    // 2. Login Status State
+    var isLoggedIn: Boolean
+        get() = settings.getBoolean("is_logged_in", false)
+        set(value) = settings.putBoolean("is_logged_in", value)
 
-    // Example: Load login state
-    fun isLoggedIn(): Boolean {
-        return settings.getBoolean("is_logged_in", false)
-    }
+    // 3. Token String (Uses getter/setter so it reads directly from disk)
+    var token: String?
+        get() = settings.getStringOrNull("user_token")
+        set(value) {
+            if (value != null) settings.putString("user_token", value)
+            else settings.remove("user_token")
+        }
 
-    fun getTokenAndStatus(): Pair<String, String>{
-        return Pair(
-            settings.getString("token", "null"),
-            settings.getString("status", "null")
-        )
-    }
+    // 4. Status String
+    var status: String?
+        get() = settings.getStringOrNull("user_status")
+        set(value) {
+            if (value != null) settings.putString("user_status", value)
+            else settings.remove("user_status")
+        }
 
+    // 5. Verification Status String
+    var verificationStatus: String?
+        get() = settings.getStringOrNull("verify_status")
+        set(value) {
+            if (value != null) settings.putString("verify_status", value)
+            else settings.remove("verify_status")
+        }
 
-    fun clear() {
-        token = null
-        status = null
-        verificationStatus = null
-    }
+    // 6. Clear everything on logout
     fun clearSession() {
         settings.clear()
     }
