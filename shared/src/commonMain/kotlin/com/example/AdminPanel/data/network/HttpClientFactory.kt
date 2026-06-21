@@ -23,7 +23,7 @@ object HttpClientFactory {
         }
 
         defaultRequest {
-            url("/")
+            url("https://sejong-app-container-847502443673.us-central1.run.app/api/")
             SessionManager.token?.let {
                 header("Authorization", "Bearer $it")
             }

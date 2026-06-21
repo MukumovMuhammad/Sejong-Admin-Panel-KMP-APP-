@@ -44,10 +44,10 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            AnnouncementStatCard("Total Announcements", uiState.totalCount.toString(), "+3 this month", Icons.Default.Info, Modifier.weight(1f))
-            AnnouncementStatCard("Published", uiState.publishedCount.toString(), "+5 this month", Icons.Default.Send, Modifier.weight(1f))
-            AnnouncementStatCard("Drafts", uiState.draftsCount.toString(), "No change", Icons.Default.Edit, Modifier.weight(1f))
-            AnnouncementStatCard("Deleted", uiState.deletedCount.toString(), "+1 this month", Icons.Default.Delete, Modifier.weight(1f), isDanger = true)
+            StatCard("Total Announcements", uiState.totalCount.toString(), "+3 this month", Icons.Default.Info, Modifier.weight(1f))
+            StatCard("Published", uiState.publishedCount.toString(), "+5 this month", Icons.Default.Send, Modifier.weight(1f))
+            StatCard("Drafts", uiState.draftsCount.toString(), "No change", Icons.Default.Edit, Modifier.weight(1f))
+            StatCard("Deleted", uiState.deletedCount.toString(), "+1 this month", Icons.Default.Delete, Modifier.weight(1f), isDanger = true)
             
             // Add Announcement Button Card
             Surface(
@@ -153,30 +153,6 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
     }
 }
 
-@Composable
-fun AnnouncementStatCard(title: String, value: String, change: String, icon: ImageVector, modifier: Modifier, isDanger: Boolean = false) {
-    Card(
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(40.dp).background(if (isDanger) Color(0xFFFFEBEE) else Color(0xFFE3F2FD), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = if (isDanger) Color.Red else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(title, fontSize = 11.sp, color = Color.Gray)
-                Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text(change, fontSize = 10.sp, color = if (change.startsWith("+")) Color(0xFF2E7D32) else if (isDanger) Color.Red else Color.Gray)
-            }
-        }
-    }
-}
 
 @Composable
 fun FilterDropdown(label: String, modifier: Modifier, icon: ImageVector? = null) {

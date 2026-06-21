@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.AdminPanel.ui.components.BodyText
 import com.example.AdminPanel.ui.components.HeaderText
+import com.example.AdminPanel.ui.components.StatCard
 import com.example.AdminPanel.ui.components.SubHeaderText
 
 @Composable
@@ -69,34 +70,3 @@ fun DashboardContent(viewModel: DashboardViewModel) {
     }
 }
 
-@Composable
-fun StatCard(title: String, value: String, change: String, icon: ImageVector, modifier: Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    BodyText(title, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = change,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (change.startsWith("+")) Color(0xFF2E7D32) else if (change.startsWith("-")) Color(0xFFC62828) else Color.Gray
-            )
-        }
-    }
-}

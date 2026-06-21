@@ -14,3 +14,4 @@ class JvmConnectivityService : ConnectivityService {
 }
 
 actual fun getConnectivityService(): ConnectivityService = JvmConnectivityService()
+
