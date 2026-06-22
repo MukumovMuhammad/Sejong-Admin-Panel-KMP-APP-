@@ -70,6 +70,16 @@ kotlin {
 
 
             implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
+
+
+            // Coil core for Compose Multiplatform
+            implementation("io.coil-kt.coil3:coil-compose:3.5.0")
+
+            // Network engine to fetch URLs (Ktor works great on all platforms)
+            implementation("io.coil-kt.coil3:coil-network-ktor3:3.5.0")
+
+            implementation("io.github.vinceglb:filekit-compose:0.8.8")
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

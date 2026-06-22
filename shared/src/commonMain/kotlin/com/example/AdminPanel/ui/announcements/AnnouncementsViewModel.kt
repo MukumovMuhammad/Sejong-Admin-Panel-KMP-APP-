@@ -1,4 +1,4 @@
-package com.example.AdminPanel.ui.admin
+package com.example.AdminPanel.ui.announcements
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -25,6 +25,8 @@ import com.example.AdminPanel.ui.components.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.AdminPanel.ui.announcements.AnnouncementsContent
+import com.example.AdminPanel.ui.announcements.AnnouncementsViewModel
 
 @Composable
 fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {

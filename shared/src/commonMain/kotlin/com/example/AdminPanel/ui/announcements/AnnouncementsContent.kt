@@ -1,8 +1,11 @@
-package com.example.AdminPanel.ui.admin
+package com.example.AdminPanel.ui.announcements
 
+
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,8 +27,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.Announcement
 import com.example.AdminPanel.ui.components.*
+import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.core.PickerMode
+import io.github.vinceglb.filekit.core.PickerType
+import kotlinx.coroutines.launch
+
 
 @Composable
 fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
@@ -135,7 +144,7 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
         if (showAddDialog) {
             AddAnnouncementSidePanel(
                 onDismiss = { showAddDialog = false },
-                onConfirm = { titles, contents ->
+                onConfirm = { titles, contents, images ->
                     viewModel.createAnnouncement(
                         titleRus = titles[0],
                         titleTaj = titles[1],
@@ -144,7 +153,8 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                         contentRus = contents[0],
                         contentTaj = contents[1],
                         contentEng = contents[2],
-                        contentKor = contents[3]
+                        contentKor = contents[3],
+                        images = images
                     )
                     showAddDialog = false
                 }
@@ -174,6 +184,21 @@ fun FilterDropdown(label: String, modifier: Modifier, icon: ImageVector? = null)
 
 @Composable
 fun AnnouncementRow(announcement: Announcement, onDelete: () -> Unit) {
+
+    val timePosted = announcement.time_posted
+    val imageUrl: String? = if (announcement.images.isNotEmpty() && announcement.images[0].url.isNotBlank()) {
+        announcement.images[0].url
+    } else {
+        null // Or set a default placeholder image URL string here like "https://example.com"
+    }
+
+    val parts = timePosted!!.split(" ")
+    val datePart = parts[0]
+    val timePart = parts[1]
+    val timePieces = timePart.split(":")
+    val datePieces = datePart.split("-")
+    val Date = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
+    val time = "${timePieces[0]}/${timePieces[1]}"
     Surface(
         modifier = Modifier.fillMaxWidth().height(80.dp),
         shape = RoundedCornerShape(8.dp),
@@ -188,7 +213,11 @@ fun AnnouncementRow(announcement: Announcement, onDelete: () -> Unit) {
             Box(
                 modifier = Modifier.size(50.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray)
             ) {
-                // Image loading logic would go here
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Announcement image",
+                    modifier = Modifier.size(50.dp)
+                )
             }
             Spacer(modifier = Modifier.width(16.dp))
             
@@ -208,8 +237,8 @@ fun AnnouncementRow(announcement: Announcement, onDelete: () -> Unit) {
 
             // Time
             Column(modifier = Modifier.weight(1.2f)) {
-                Text("15 Jun 2026", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                Text("10:30 AM", fontSize = 11.sp, color = Color.Gray)
+                Text(Date, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text(time, fontSize = 11.sp, color = Color.Gray)
             }
 
             // Status
@@ -236,7 +265,7 @@ fun AnnouncementRow(announcement: Announcement, onDelete: () -> Unit) {
 @Composable
 fun AddAnnouncementSidePanel(
     onDismiss: () -> Unit,
-    onConfirm: (List<String>, List<String>) -> Unit
+    onConfirm: (List<String>, List<String>, List<ByteArray>) -> Unit
 ) {
     var titleRus by remember { mutableStateOf("") }
     var titleTaj by remember { mutableStateOf("") }
@@ -248,10 +277,29 @@ fun AddAnnouncementSidePanel(
     var contentEng by remember { mutableStateOf("") }
     var contentKor by remember { mutableStateOf("") }
 
+    val scope = rememberCoroutineScope()
+
+    // 2. State to hold the chosen image byte arrays
+    var selectedImages by remember { mutableStateOf<List<ByteArray>>(emptyList()) }
+
+    // 3. Configure the FileKit image picker launcher
+    val launcher = rememberFilePickerLauncher(
+        type = PickerType.Image,
+        mode = PickerMode.Multiple() // Allows picking up to 10 images
+    ) { files ->
+        // This runs after the user selects their files
+        if (files != null) {
+            scope.launch {
+                // Read all files securely into platform-safe ByteArrays
+                selectedImages = files.map { it.readBytes() }
+            }
+        }
+    }
+
     BasicAlertDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.widthIn(max = 900.dp).fillMaxWidth().padding(16.dp),
+            modifier = Modifier.widthIn(max = 1200.dp).fillMaxWidth().padding(16.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp
         ) {
@@ -296,8 +344,15 @@ fun AddAnnouncementSidePanel(
                 // Images Section
                 Text("Images (Optional)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                 Spacer(modifier = Modifier.height(12.dp))
+
+                // 4. Clickable container to launch file picker
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(120.dp).border(1.dp, Color.LightGray, RoundedCornerShape(12.dp)).background(Color.White),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .clickable { launcher.launch() }, // Opens gallery instantly!
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -307,6 +362,16 @@ fun AddAnnouncementSidePanel(
                     }
                 }
 
+                // 5. Visual counter showing how many files were successfully loaded
+                AnimatedVisibility(visible = selectedImages.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Selected files: ${selectedImages.size} images ready.",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
                 Spacer(modifier = Modifier.height(40.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -316,7 +381,8 @@ fun AddAnnouncementSidePanel(
                         onClick = {
                             onConfirm(
                                 listOf(titleRus, titleTaj, titleEng, titleKor),
-                                listOf(contentRus, contentTaj, contentEng, contentKor)
+                                listOf(contentRus, contentTaj, contentEng, contentKor),
+                                selectedImages
                             )
                         },
                         modifier = Modifier.weight(1f),
