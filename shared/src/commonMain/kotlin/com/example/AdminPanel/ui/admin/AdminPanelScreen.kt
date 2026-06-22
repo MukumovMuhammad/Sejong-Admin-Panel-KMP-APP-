@@ -27,6 +27,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.AdminPanel.ui.announcements.AnnouncementsContent
 import com.example.AdminPanel.ui.announcements.AnnouncementsViewModel
+import com.example.AdminPanel.ui.users.UsersContent
+import com.example.AdminPanel.ui.users.UsersViewModel
 
 @Composable
 fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
@@ -58,7 +60,14 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
                         )
                         DashboardContent(dashboardViewModel)
                     }
-                    AdminTab.Users -> PlaceholderContent("Users")
+                    AdminTab.Users -> {
+                        val usersViewModel: UsersViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer { UsersViewModel() }
+                            }
+                        )
+                        UsersContent(usersViewModel)
+                    }
                     AdminTab.PendingApprovals -> PlaceholderContent("Pending Approvals")
                     AdminTab.Groups -> PlaceholderContent("Groups")
                     AdminTab.Schedules -> PlaceholderContent("Schedules")
