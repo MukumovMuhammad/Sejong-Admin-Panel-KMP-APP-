@@ -72,7 +72,7 @@ fun UserDetailsPanel(user: User, onClose: () -> Unit) {
                             .background(Color.LightGray)
                     ) {
                         AsyncImage(
-                            model = user.avatar,
+                            model = user.avatar_id,
                             contentDescription = "Image Avatar",
                             modifier = Modifier.fillMaxSize()
                         )
@@ -208,27 +208,11 @@ fun UserDetailsPanel(user: User, onClose: () -> Unit) {
 }
 
 @Composable
-fun DetailSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column {
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(bottom = 12.dp))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                .padding(16.dp)
-        ) {
-            content()
-        }
-    }
+fun DetailRow(label: String, value: String) {
+    com.example.AdminPanel.ui.components.DetailRow(label, value)
 }
 
 @Composable
-fun DetailRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, color = Color.Gray, fontSize = 14.sp)
-        Text(value, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-    }
+fun DetailSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    com.example.AdminPanel.ui.components.DetailSection(title, content)
 }

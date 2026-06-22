@@ -29,6 +29,8 @@ import com.example.AdminPanel.ui.announcements.AnnouncementsContent
 import com.example.AdminPanel.ui.announcements.AnnouncementsViewModel
 import com.example.AdminPanel.ui.users.UsersContent
 import com.example.AdminPanel.ui.users.UsersViewModel
+import com.example.AdminPanel.ui.groups.GroupsContent
+import com.example.AdminPanel.ui.groups.GroupsViewModel
 
 @Composable
 fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
@@ -69,7 +71,14 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
                         UsersContent(usersViewModel)
                     }
                     AdminTab.PendingApprovals -> PlaceholderContent("Pending Approvals")
-                    AdminTab.Groups -> PlaceholderContent("Groups")
+                    AdminTab.Groups -> {
+                        val groupsViewModel: GroupsViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer { GroupsViewModel() }
+                            }
+                        )
+                        GroupsContent(groupsViewModel)
+                    }
                     AdminTab.Schedules -> PlaceholderContent("Schedules")
                     AdminTab.Announcements -> {
                         val announcementsViewModel: AnnouncementsViewModel = viewModel(

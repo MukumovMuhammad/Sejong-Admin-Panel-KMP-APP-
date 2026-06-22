@@ -232,7 +232,7 @@ fun UserRow(
                 ) {
                     if (!isLoading) {
                         AsyncImage(
-                            model = user.avatar,
+                            model = user.avatar_id,
                             contentDescription = "Image Avatar",
                             modifier = Modifier.fillMaxSize()
                         )

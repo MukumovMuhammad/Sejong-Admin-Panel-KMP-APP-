@@ -40,6 +40,7 @@ class UsersViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val response = api.getUsers(status = status, verificationStatus = verification)
+                println("UserViewModel: Got users data! ${response}")
                 _uiState.value = _uiState.value.copy(
                     users = response.users,
                     filteredUsers = filterUsers(response.users, _uiState.value.searchQuery),

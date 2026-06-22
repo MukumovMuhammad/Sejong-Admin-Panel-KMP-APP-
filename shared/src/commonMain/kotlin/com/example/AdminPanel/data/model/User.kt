@@ -13,7 +13,8 @@ data class User(
     val status: String, // Guest, Student, Teacher, Admin
     val verification_status: String, // Pending, Approved, Rejected
     val group: String? = "",
-    val avatar: String? = null,
+    val group_id: String? = null,
+    val avatar_id: String? = null,
     val date_joined: String? = null
 )
 

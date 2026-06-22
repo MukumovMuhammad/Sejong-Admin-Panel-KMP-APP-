@@ -180,21 +180,8 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
 
 
 @Composable
-fun FilterDropdown(label: String, modifier: Modifier, icon: ImageVector? = null) {
-    OutlinedCard(
-        modifier = modifier.height(56.dp),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(label, fontSize = 13.sp, color = Color.Gray)
-            Icon(icon ?: Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
-        }
-    }
+fun FilterDropdown(label: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+    com.example.AdminPanel.ui.components.FilterDropdown(label, modifier, icon)
 }
 
 @Composable
