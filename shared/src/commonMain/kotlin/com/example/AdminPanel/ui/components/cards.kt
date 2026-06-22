@@ -25,9 +25,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.animation.core.*
+import androidx.compose.ui.composed
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+
 
 @Composable
-fun StatCard(title: String, value: String, change: String, icon: ImageVector, modifier: Modifier,isDanger: Boolean = false) {
+fun StatCard(
+    title: String,
+    value: String,
+    change: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    isDanger: Boolean = false,
+    isLoading: Boolean = false
+) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -36,24 +49,106 @@ fun StatCard(title: String, value: String, change: String, icon: ImageVector, mo
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Icon Box Container
                 Box(
-                    modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            if (isLoading) Color.LightGray.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primaryContainer,
+                            CircleShape
+                        )
+                        .shimmerLoadingAnimation(isLoading), // Shimmer effect applied
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    if (!isLoading) {
+                        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Column {
-                    BodyText(title, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    if (isLoading) {
+                        // Title Placeholder Strip
+                        Box(
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(16.dp)
+                                .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                                .shimmerLoadingAnimation(true)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        // Value Placeholder Strip
+                        Box(
+                            modifier = Modifier
+                                .width(50.dp)
+                                .height(22.dp)
+                                .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                                .shimmerLoadingAnimation(true)
+                        )
+                    } else {
+                        BodyText(title, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
+
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = change,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (change.startsWith("+")) Color(0xFF2E7D32) else if (isDanger) Color.Red else Color.Gray
-            )
+
+            if (isLoading) {
+                // Bottom Change Progress Text Line Placeholder Strip
+                Box(
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(14.dp)
+                        .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                        .shimmerLoadingAnimation(true)
+                )
+            } else {
+                Text(
+                    text = change,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (change.startsWith("+")) Color(0xFF2E7D32) else if (isDanger) Color.Red else Color.Gray
+                )
+            }
         }
     }
+}
+
+
+
+
+fun Modifier.shimmerLoadingAnimation(
+    isLoading: Boolean,
+    shimmerColor: Color = Color.White.copy(alpha = 0.4f) // Glassy white shine
+): Modifier = composed {
+    if (!isLoading) return@composed this
+
+    // 1. Create an infinite transition loop
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val translateAnim = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerTranslation"
+    )
+
+    // 2. Build a linear gradient for the glass shine stripe
+    val shimmerColors = listOf(
+        Color.Transparent,
+        shimmerColor,
+        Color.Transparent
+    )
+
+    // 3. Draw the animated gradient over the component background
+    this.background(
+        brush = Brush.linearGradient(
+            colors = shimmerColors,
+            start = Offset(x = translateAnim.value - 300f, y = translateAnim.value - 300f),
+            end = Offset(x = translateAnim.value, y = translateAnim.value)
+        )
+    )
 }

@@ -24,9 +24,23 @@ import com.example.AdminPanel.ui.components.*
 
 @Composable
 fun UserDetailsPanel(user: User, onClose: () -> Unit) {
+
+    var formattedDate = ""
+    var formattedTime = ""
+
+    if (!user.date_joined.isNullOrBlank()) {
+        val parts = user.date_joined.split(" ")
+        if (parts.size >= 2) {
+            val datePart = parts[0]
+            val timePart = parts[1]
+            val timePieces = timePart.split(":")
+            val datePieces = datePart.split("-")
+            if (datePieces.size >= 3) formattedDate = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
+            if (timePieces.size >= 2) formattedTime = "${timePieces[0]}/${timePieces[1]}"
+        }
+    }
     Surface(
         modifier = Modifier
-            .width(400.dp)
             .fillMaxHeight(),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 4.dp,
@@ -57,20 +71,24 @@ fun UserDetailsPanel(user: User, onClose: () -> Unit) {
                             .clip(CircleShape)
                             .background(Color.LightGray)
                     ) {
-                        AsyncImage(model = user.avatar, contentDescription = null, modifier = Modifier.fillMaxSize())
+                        AsyncImage(
+                            model = user.avatar,
+                            contentDescription = "Image Avatar",
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(user.fullname ?: "No Name", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            VerificationBadge(user.verification_status)
-                        }
+                        Text(user.fullname ?: "No Name", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        VerificationBadge(user.verification_status)
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(user.email ?: "No Email", fontSize = 14.sp, color = Color.Gray)
                         Text(user.phone_number ?: "No Phone", fontSize = 14.sp, color = Color.Gray)
                         
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             StatusBadge(user.status)
                             Surface(color = Color(0xFFF3E5F5), shape = RoundedCornerShape(4.dp)) {
                                 Text(user.group ?: "No Group", color = Color(0xFF7B1FA2), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))

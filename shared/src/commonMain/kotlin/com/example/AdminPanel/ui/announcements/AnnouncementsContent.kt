@@ -53,10 +53,10 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatCard("Total Announcements", uiState.totalCount.toString(), "+3 this month", Icons.Default.Info, Modifier.weight(1f))
-            StatCard("Published", uiState.publishedCount.toString(), "+5 this month", Icons.Default.Send, Modifier.weight(1f))
-            StatCard("Drafts", uiState.draftsCount.toString(), "No change", Icons.Default.Edit, Modifier.weight(1f))
-            StatCard("Deleted", uiState.deletedCount.toString(), "+1 this month", Icons.Default.Delete, Modifier.weight(1f), isDanger = true)
+            StatCard("Total Announcements", uiState.totalCount.toString(), "+3 this month", Icons.Default.Info, Modifier.weight(1f), isLoading = uiState.isLoading)
+            StatCard("Published", uiState.publishedCount.toString(), "+5 this month", Icons.Default.Send, Modifier.weight(1f),isLoading = uiState.isLoading)
+            StatCard("Drafts", uiState.draftsCount.toString(), "No change", Icons.Default.Edit, Modifier.weight(1f),isLoading = uiState.isLoading)
+            StatCard("Deleted", uiState.deletedCount.toString(), "+1 this month", Icons.Default.Delete, Modifier.weight(1f), isDanger = true, isLoading = uiState.isLoading)
             
             // Add Announcement Button Card
             Surface(
@@ -122,23 +122,38 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
             Text("Actions", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold, fontSize = 13.sp, textAlign = TextAlign.Center)
         }
 
-        // List
-        if (uiState.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+
+            if (uiState.isLoading){
+                items(10) {
+                    AnnouncementRow(
+                        announcement = Announcement(),
+                        isLoading = true,
+                        onDelete = { }
+                    )
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            else if (uiState.error != null){
+               item{
+                   Text("Some error")
+               }
+                item{
+                    Text(uiState.error!!)
+                }
+            }
+            else{
                 items(uiState.announcements) { announcement ->
                     AnnouncementRow(
                         announcement = announcement,
+                        isLoading = uiState.isLoading,
                         onDelete = { viewModel.deleteAnnouncement(announcement.id ?: "") }
                     )
                 }
             }
+
         }
 
         if (showAddDialog) {
@@ -183,22 +198,37 @@ fun FilterDropdown(label: String, modifier: Modifier, icon: ImageVector? = null)
 }
 
 @Composable
-fun AnnouncementRow(announcement: Announcement, onDelete: () -> Unit) {
+fun AnnouncementRow(
+    announcement: Announcement?, // Make optional so you can pass null when loading
+    onDelete: () -> Unit,
+    isLoading: Boolean = false // <-- Added loading state flag
+) {
+    // 1. Only parse date fields if we are NOT loading real data
+    var formattedDate = ""
+    var formattedTime = ""
+    var imageUrl: String? = null
 
-    val timePosted = announcement.time_posted
-    val imageUrl: String? = if (announcement.images.isNotEmpty() && announcement.images[0].url.isNotBlank()) {
-        announcement.images[0].url
-    } else {
-        null // Or set a default placeholder image URL string here like "https://example.com"
+    if (!isLoading && announcement != null) {
+        val timePosted = announcement.time_posted
+        imageUrl = if (announcement.images.isNotEmpty() && announcement.images[0].url.isNotBlank()) {
+            announcement.images[0].url
+        } else {
+            null
+        }
+
+        if (!timePosted.isNullOrBlank()) {
+            val parts = timePosted.split(" ")
+            if (parts.size >= 2) {
+                val datePart = parts[0]
+                val timePart = parts[1]
+                val timePieces = timePart.split(":")
+                val datePieces = datePart.split("-")
+                if (datePieces.size >= 3) formattedDate = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
+                if (timePieces.size >= 2) formattedTime = "${timePieces[0]}/${timePieces[1]}"
+            }
+        }
     }
 
-    val parts = timePosted!!.split(" ")
-    val datePart = parts[0]
-    val timePart = parts[1]
-    val timePieces = timePart.split(":")
-    val datePieces = datePart.split("-")
-    val Date = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
-    val time = "${timePieces[0]}/${timePieces[1]}"
     Surface(
         modifier = Modifier.fillMaxWidth().height(80.dp),
         shape = RoundedCornerShape(8.dp),
@@ -211,55 +241,96 @@ fun AnnouncementRow(announcement: Announcement, onDelete: () -> Unit) {
         ) {
             // Image Thumbnail
             Box(
-                modifier = Modifier.size(50.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray)
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.LightGray.copy(alpha = 0.3f))
+                    .shimmerLoadingAnimation(isLoading) // Shimmer on image block
             ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "Announcement image",
-                    modifier = Modifier.size(50.dp)
-                )
+                if (!isLoading) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Announcement image",
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
             }
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             // Title Multi-lang
             Column(modifier = Modifier.weight(2.5f)) {
-                Text(announcement.title_rus ?: "", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(announcement.title_kor ?: "", fontSize = 11.sp, color = Color.Gray)
-                Text(announcement.title_eng ?: "", fontSize = 11.sp, color = Color.Gray)
+                if (isLoading) {
+                    Box(modifier = Modifier.width(160.dp).height(14.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.width(100.dp).height(11.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.width(120.dp).height(11.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    Text(announcement?.title_rus ?: "", fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(announcement?.title_kor ?: "", fontSize = 11.sp, color = Color.Gray)
+                    Text(announcement?.title_eng ?: "", fontSize = 11.sp, color = Color.Gray)
+                }
             }
 
             // Author
             Row(modifier = Modifier.weight(1.2f), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(24.dp).background(Color.LightGray, CircleShape))
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(Color.LightGray.copy(alpha = 0.3f), CircleShape)
+                        .shimmerLoadingAnimation(isLoading) // Shimmer on author profile circle
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(announcement.author ?: "Unknown", fontSize = 12.sp)
+                if (isLoading) {
+                    Box(modifier = Modifier.width(60.dp).height(12.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    Text(announcement?.author ?: "Unknown", fontSize = 12.sp)
+                }
             }
 
             // Time
             Column(modifier = Modifier.weight(1.2f)) {
-                Text(Date, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                Text(time, fontSize = 11.sp, color = Color.Gray)
-            }
-
-            // Status
-            Box(modifier = Modifier.weight(1f)) {
-                Surface(
-                    color = Color(0xFFE8F5E9),
-                    shape = RoundedCornerShape(4.dp)
-                ) {
-                    Text("Published", color = Color(0xFF2E7D32), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                if (isLoading) {
+                    Box(modifier = Modifier.width(70.dp).height(12.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.width(45.dp).height(11.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    Text(formattedDate, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text(formattedTime, fontSize = 11.sp, color = Color.Gray)
                 }
             }
 
-            // Actions
+            // Status Badge
+            Box(modifier = Modifier.weight(1f)) {
+                if (isLoading) {
+                    Box(modifier = Modifier.width(70.dp).height(20.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    Surface(
+                        color = Color(0xFFE8F5E9),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text("Published", color = Color(0xFF2E7D32), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    }
+                }
+            }
+
+            // Actions Buttons
             Row(modifier = Modifier.weight(1.2f), horizontalArrangement = Arrangement.Center) {
-                IconButton(onClick = {}) { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
-                IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.7f)) }
+                if (isLoading) {
+                    repeat(3) {
+                        Box(modifier = Modifier.padding(horizontal = 4.dp).size(24.dp).background(Color.LightGray.copy(alpha = 0.3f), CircleShape).shimmerLoadingAnimation(true))
+                    }
+                } else {
+                    IconButton(onClick = {}) { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
+                    IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
+                    IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.7f)) }
+                }
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

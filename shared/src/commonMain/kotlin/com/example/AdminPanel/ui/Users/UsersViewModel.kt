@@ -12,9 +12,11 @@ import kotlinx.coroutines.launch
 
 data class UsersUiState(
     val users: List<User> = emptyList(),
+    val filteredUsers: List<User> = emptyList(), // Added filtered list
     val isLoading: Boolean = false,
     val error: String? = null,
     val selectedUser: User? = null,
+    val searchQuery: String = "", // Added search query
     val totalCount: Int = 0,
     val studentsCount: Int = 0,
     val teachersCount: Int = 0,
@@ -33,14 +35,15 @@ class UsersViewModel : ViewModel() {
     }
 
     fun loadUsers(status: String? = null, verification: String? = null) {
+        println("Loading users!")
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val response = api.getUsers(status = status, verificationStatus = verification)
                 _uiState.value = _uiState.value.copy(
                     users = response.users,
+                    filteredUsers = filterUsers(response.users, _uiState.value.searchQuery),
                     totalCount = response.total,
-                    // Mocking stats for now as they are not directly in the list response
                     studentsCount = response.users.count { it.status == "Student" },
                     teachersCount = response.users.count { it.status == "Teacher" },
                     adminsCount = response.users.count { it.status == "Admin" },
@@ -48,8 +51,25 @@ class UsersViewModel : ViewModel() {
                     isLoading = false
                 )
             } catch (e: Exception) {
+                println("Got some errors Loading User data! ${e.message}")
                 _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
             }
+        }
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.value = _uiState.value.copy(
+            searchQuery = query,
+            filteredUsers = filterUsers(_uiState.value.users, query)
+        )
+    }
+
+    private fun filterUsers(users: List<User>, query: String): List<User> {
+        if (query.isBlank()) return users
+        return users.filter { user ->
+            user.fullname?.contains(query, ignoreCase = true) == true ||
+            user.username.contains(query, ignoreCase = true) ||
+            user.email?.contains(query, ignoreCase = true) == true
         }
     }
 

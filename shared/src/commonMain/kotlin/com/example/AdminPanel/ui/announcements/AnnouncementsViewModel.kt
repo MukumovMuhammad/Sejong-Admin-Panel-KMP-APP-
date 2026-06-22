@@ -32,10 +32,12 @@ class AnnouncementsViewModel : ViewModel() {
     }
 
     fun loadAnnouncements() {
+        println("Fetching for the announcements")
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val response = api.getAnnouncements()
+                println("Got announcements ${response}")
                 // In a real app, these stats might come from the API
                 _uiState.value = _uiState.value.copy(
                     announcements = response.announcements,
@@ -46,6 +48,7 @@ class AnnouncementsViewModel : ViewModel() {
                     isLoading = false
                 )
             } catch (e: Exception) {
+                print("Got errors fetching announcements: ${e.message}")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message ?: "Failed to load announcements"

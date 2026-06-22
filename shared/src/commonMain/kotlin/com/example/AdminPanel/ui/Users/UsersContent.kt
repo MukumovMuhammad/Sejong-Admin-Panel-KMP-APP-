@@ -1,8 +1,11 @@
 package com.example.AdminPanel.ui.users
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,14 +33,14 @@ import com.example.AdminPanel.ui.announcements.FilterDropdown
 @Composable
 fun UsersContent(viewModel: UsersViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    var panelWidth by remember { mutableStateOf(450.dp) }
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        // Left Column: List and Stats
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Main Content Layer
         Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .padding(end = if (uiState.selectedUser != null) 16.dp else 0.dp)
+                .fillMaxSize()
+                .padding(end = 0.dp)
         ) {
             // Header
             Column(modifier = Modifier.padding(bottom = 24.dp)) {
@@ -50,11 +54,11 @@ fun UsersContent(viewModel: UsersViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                UserStatCard("Total Users", uiState.totalCount.toString(), "+8.2%", Icons.Default.Person, Modifier.weight(1f))
-                UserStatCard("Students", uiState.studentsCount.toString(), "+6.1%", Icons.Default.AccountBox, Modifier.weight(1f))
-                UserStatCard("Teachers", uiState.teachersCount.toString(), "+2.4%", Icons.Default.Person, Modifier.weight(1f))
-                UserStatCard("Admins", uiState.adminsCount.toString(), "", Icons.Default.Lock, Modifier.weight(1f))
-                UserStatCard("Pending", uiState.pendingCount.toString(), "12.7%", Icons.Default.Refresh, Modifier.weight(1f), isWarning = true)
+                StatCard("Total Users", uiState.totalCount.toString(), "", Icons.Default.Person, Modifier.weight(1f), isLoading = uiState.isLoading)
+                StatCard("Students", uiState.studentsCount.toString(), "", Icons.Default.AccountBox, Modifier.weight(1f), isLoading = uiState.isLoading)
+                StatCard("Teachers", uiState.teachersCount.toString(), "", Icons.Default.Person, Modifier.weight(1f), isLoading = uiState.isLoading)
+                StatCard("Admins", uiState.adminsCount.toString(), "", Icons.Default.Lock, Modifier.weight(1f), isLoading = uiState.isLoading)
+                StatCard("Pending", uiState.pendingCount.toString(), "", Icons.Default.Refresh, Modifier.weight(1f), isDanger = true, isLoading = uiState.isLoading)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -72,19 +76,24 @@ fun UsersContent(viewModel: UsersViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedTextField(
-                        value = "",
-                        onValueChange = {},
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.onSearchQueryChange(it) },
                         placeholder = { Text("Search users by name, username, email...") },
                         modifier = Modifier.weight(2f),
                         shape = RoundedCornerShape(8.dp),
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        singleLine = true
                     )
                     
                     FilterDropdown("Status", Modifier.weight(0.8f))
                     FilterDropdown("Verification", Modifier.weight(0.8f))
                     FilterDropdown("Group", Modifier.weight(0.8f))
                     
-                    TextButton(onClick = {}) { Text("Clear Filters") }
+                    TextButton(onClick = { viewModel.onSearchQueryChange("") }) { Text("Clear Filters") }
+                    
+                    IconButton(onClick = { viewModel.loadUsers() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.primary)
+                    }
                     
                     SecondaryButton(text = "Import Students", onClick = {}, modifier = Modifier.width(160.dp), icon = Icons.Default.Share)
                     PrimaryButton(text = "Add User", onClick = {}, modifier = Modifier.width(140.dp), icon = Icons.Default.Add)
@@ -114,19 +123,26 @@ fun UsersContent(viewModel: UsersViewModel) {
             }
 
             // List
-            if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    items(uiState.users) { user ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                if (uiState.isLoading && uiState.users.isEmpty()) {
+                    items(10) {
+                        UserRow(
+                            user = User(id = "", username = "", status = "", verification_status = ""),
+                            isSelected = false,
+                            isLoading = true,
+                            onClick = {},
+                            onDelete = {}
+                        )
+                    }
+                } else {
+                    items(uiState.filteredUsers) { user ->
                         UserRow(
                             user = user,
                             isSelected = uiState.selectedUser?.id == user.id,
+                            isLoading = uiState.isLoading,
                             onClick = { viewModel.selectUser(user) },
                             onDelete = { viewModel.deleteUser(user.id) }
                         )
@@ -135,65 +151,69 @@ fun UsersContent(viewModel: UsersViewModel) {
             }
         }
 
-        // Right Column: User Details
-        if (uiState.selectedUser != null) {
-            UserDetailsPanel(
-                user = uiState.selectedUser!!,
-                onClose = { viewModel.selectUser(null) }
-            )
-        }
-    }
-}
 
-@Composable
-fun UserStatCard(title: String, value: String, change: String, icon: ImageVector, modifier: Modifier, isWarning: Boolean = false) {
-    Card(
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(40.dp).background(if (isWarning) Color(0xFFFFF3E0) else Color(0xFFE3F2FD), CircleShape),
-                contentAlignment = Alignment.Center
+        if (uiState.selectedUser != null){
+            // Overlay Side Panel Layer
+            AnimatedVisibility(
+                visible = uiState.selectedUser != null,
+                enter = slideInHorizontally(initialOffsetX = { it }),
+                exit = slideOutHorizontally(targetOffsetX = { it }),
+                modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                Icon(icon, contentDescription = null, tint = if (isWarning) Color(0xFFFF9800) else MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, fontSize = 11.sp, color = Color.Gray)
-                    if (change.isNotEmpty()) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            color = if (isWarning) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                change, 
-                                fontSize = 10.sp, 
-                                color = if (isWarning) Color.Red else Color(0xFF2E7D32),
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                Row(modifier = Modifier.width(panelWidth).fillMaxHeight()) {
+                    // Resize Handle (Draggable Area)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(4.dp)
+                            .background(Color.Transparent)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    panelWidth = (panelWidth - dragAmount.x.toDp()).coerceIn(350.dp, 800.dp)
+                                }
+                            }
+                    )
+
+                    UserDetailsPanel(
+                        user = uiState.selectedUser!!,
+                        onClose = { viewModel.selectUser(null) }
+                    )
                 }
-                Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text(if (isWarning) "Awaiting verification" else "All registered users", fontSize = 10.sp, color = Color.Gray)
             }
         }
+
     }
 }
 
 @Composable
-fun UserRow(user: User, isSelected: Boolean, onClick: () -> Unit, onDelete: () -> Unit) {
+fun UserRow(
+    user: User,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    isLoading: Boolean = false
+) {
+
+    var formattedDate = ""
+    var formattedTime = ""
+
+    if (!user.date_joined.isNullOrBlank()) {
+        val parts = user.date_joined.split(" ")
+        if (parts.size >= 2) {
+            val datePart = parts[0]
+            val timePart = parts[1]
+            val timePieces = timePart.split(":")
+            val datePieces = datePart.split("-")
+            if (datePieces.size >= 3) formattedDate = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
+            if (timePieces.size >= 2) formattedTime = "${timePieces[0]}/${timePieces[1]}"
+        }
+    }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .height(72.dp)
-            .clickable(onClick = onClick),
+            .clickable(enabled = !isLoading, onClick = onClick),
         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface,
         tonalElevation = if (isSelected) 2.dp else 0.5.dp
     ) {
@@ -204,48 +224,92 @@ fun UserRow(user: User, isSelected: Boolean, onClick: () -> Unit, onDelete: () -
             // User Info
             Row(modifier = Modifier.weight(2.5f), verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.LightGray)
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.LightGray.copy(alpha = 0.3f))
+                        .shimmerLoadingAnimation(isLoading)
                 ) {
-                    AsyncImage(
-                        model = user.avatar,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (!isLoading) {
+                        AsyncImage(
+                            model = user.avatar,
+                            contentDescription = "Image Avatar",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(user.fullname ?: "No Name", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text(user.email ?: "", fontSize = 11.sp, color = Color.Gray)
+                    if (isLoading) {
+                        Box(modifier = Modifier.width(100.dp).height(14.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Box(modifier = Modifier.width(130.dp).height(11.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                    } else {
+                        Text(user.fullname ?: "No Name", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(user.email ?: "", fontSize = 11.sp, color = Color.Gray)
+                    }
                 }
             }
 
             // Username
-            Text(user.username, modifier = Modifier.weight(1.5f), fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+            Box(modifier = Modifier.weight(1.5f)) {
+                if (isLoading) {
+                    Box(modifier = Modifier.width(80.dp).height(14.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    Text(user.username, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                }
+            }
 
             // Status
             Box(modifier = Modifier.weight(1f)) {
-                StatusBadge(user.status)
+                if (isLoading) {
+                    Box(modifier = Modifier.width(60.dp).height(20.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(12.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    StatusBadge(user.status)
+                }
             }
 
             // Verification
             Box(modifier = Modifier.weight(1.2f)) {
-                VerificationBadge(user.verification_status)
+                if (isLoading) {
+                    Box(modifier = Modifier.width(70.dp).height(20.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(12.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    VerificationBadge(user.verification_status)
+                }
             }
 
             // Group
-            Text(user.group ?: "-", modifier = Modifier.weight(1f), fontSize = 13.sp)
+            Box(modifier = Modifier.weight(1f)) {
+                if (isLoading) {
+                    Box(modifier = Modifier.width(40.dp).height(14.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    Text(user.group ?: "-", fontSize = 13.sp)
+                }
+            }
 
             // Joined At
             Column(modifier = Modifier.weight(1.5f)) {
-                Text("15 Jun 2026", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                Text("10:30 AM", fontSize = 11.sp, color = Color.Gray)
+                if (isLoading) {
+                    Box(modifier = Modifier.width(75.dp).height(12.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.width(50.dp).height(11.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
+                } else {
+                    Text(formattedDate, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Text(formattedTime, fontSize = 11.sp, color = Color.Gray)
+                }
             }
 
             // Actions
             Row(modifier = Modifier.weight(1.2f), horizontalArrangement = Arrangement.Center) {
-                IconButton(onClick = onClick) { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
-                IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.7f)) }
+                if (isLoading) {
+                    repeat(3) {
+                        Box(modifier = Modifier.padding(horizontal = 4.dp).size(24.dp).background(Color.LightGray.copy(alpha = 0.3f), CircleShape).shimmerLoadingAnimation(true))
+                    }
+                } else {
+                    IconButton(onClick = onClick) { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
+                    IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.7f)) }
+                }
             }
         }
     }

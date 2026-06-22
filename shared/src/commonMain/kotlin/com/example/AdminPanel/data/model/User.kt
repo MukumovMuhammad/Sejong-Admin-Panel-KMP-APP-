@@ -19,8 +19,8 @@ data class User(
 
 @Serializable
 data class UserListResponse(
-    val total: Int,
-    val users: List<User>
+    val total: Int = 0,
+    val users: List<User> = emptyList()
 )
 
 @Serializable
