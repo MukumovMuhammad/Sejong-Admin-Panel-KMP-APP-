@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.material.icons.filled.DateRange
+
 @Composable
 fun DetailSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column {
@@ -92,6 +94,98 @@ fun FilterDropdown(
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
             }
+        }
+    }
+}
+
+
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimeRangeDropdown(
+    selectedLabel: String,
+    onPresetSelected: (String) -> Unit,
+    onCustomRangeSelected: (Long?, Long?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var showDatePickerModal by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = selectedLabel.ifEmpty { "Select Time Range" },
+            onValueChange = {},
+            readOnly = true,
+            leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+            ),
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true)
+                .fillMaxWidth()
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            val presets = listOf("All Time")
+
+            presets.forEach { preset ->
+                DropdownMenuItem(
+                    text = { Text(preset) },
+                    onClick = {
+                        onPresetSelected(preset)
+                        expanded = false
+                    }
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+            // Custom selection option that triggers the date picker dialog
+            DropdownMenuItem(
+                text = { Text("Custom Range...", color = MaterialTheme.colorScheme.primary) },
+                onClick = {
+                    expanded = false
+                    showDatePickerModal = true
+                }
+            )
+        }
+    }
+
+    // Modern Material 3 Date Range Picker Dialog
+    if (showDatePickerModal) {
+        val dateRangePickerState = rememberDateRangePickerState()
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePickerModal = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onCustomRangeSelected(
+                            dateRangePickerState.selectedStartDateMillis,
+                            dateRangePickerState.selectedEndDateMillis
+                        )
+                        showDatePickerModal = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePickerModal = false }) { Text("Cancel") }
+            }
+        ) {
+            DateRangePicker(
+                state = dateRangePickerState,
+                modifier = Modifier.weight(1f).padding(16.dp)
+            )
         }
     }
 }

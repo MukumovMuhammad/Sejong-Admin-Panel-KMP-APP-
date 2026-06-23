@@ -35,6 +35,7 @@ import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
 import kotlinx.coroutines.launch
 import kotlin.text.ifEmpty
+import kotlin.time.Instant
 
 
 @Composable
@@ -43,6 +44,12 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
     var showAddDialog by remember { mutableStateOf(false) }
 
     var searchText by remember { mutableStateOf("") }
+
+
+    var timeFilterLabel by remember { mutableStateOf("All Time") }
+    var startDateMillis by remember { mutableStateOf<Long?>(null) }
+    var endDateMillis by remember { mutableStateOf<Long?>(null) }
+
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -66,8 +73,8 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
 
                 PrimaryButton(
                     text = "Add Announcement",
-                    onClick = {showAddDialog = true},
-                    modifier = Modifier.width(140.dp),
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier.width(300.dp),
                     icon = Icons.Default.Add
                 )
 
@@ -117,6 +124,26 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                         shape = RoundedCornerShape(8.dp),
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
                     )
+
+                    // Inside your filter row container:
+                    TimeRangeDropdown(
+                        selectedLabel = timeFilterLabel,
+                        onPresetSelected = { preset ->
+                            timeFilterLabel = preset
+                            // Clear manual timestamps if a quick preset is clicked
+                            startDateMillis = null
+                            endDateMillis = null
+                        },
+                        onCustomRangeSelected = { start, end ->
+                            startDateMillis = start
+                            endDateMillis = end
+                            if (start != null && end != null) {
+                                // Format timestamps into a display label (e.g., "Jun 10 - Jun 17")
+                                timeFilterLabel = "Custom Range Selected"
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
 
@@ -162,13 +189,49 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                 }
             }
             else{
-                val filteredAnn = uiState.announcements.filter { announcement ->
 
-                    val matchesTitle = announcement.title_taj?.contains(searchText, ignoreCase = true) == true ||
+
+                val filteredAnn = uiState.announcements.filter { announcement ->
+                    // 1. Existing dynamic title search check
+                    val matchesTitle = searchText.isEmpty() ||
+                            announcement.title_taj?.contains(searchText, ignoreCase = true) == true ||
                             announcement.title_rus?.contains(searchText, ignoreCase = true) == true ||
                             announcement.title_eng?.contains(searchText, ignoreCase = true) == true ||
                             announcement.title_kor?.contains(searchText, ignoreCase = true) == true
-                    matchesTitle
+
+                    // 2. Time Range Filter Check
+                    val matchesTime = when (timeFilterLabel) {
+
+
+                        "All Time" -> true
+
+                        "Custom Range Selected" -> {
+                            val annTimestamp = try {
+                                announcement.time_posted?.let { rawText ->
+                                    // 1. Replace the space between date and time with 'T'
+                                    // This converts "2026-06-23 07:55:52.235000+00:00"
+                                    // into "2026-06-23T07:55:52.235000+00:00"
+                                    val isoFormat = rawText.trim().replace(" ", "T")
+
+                                    Instant.parse(isoFormat).toEpochMilliseconds()
+                                }
+                            } catch (e: Exception) {
+                                println("Time parsing failed for: ${announcement.time_posted} due to ${e.message}")
+                                null
+                            }
+
+                            if (annTimestamp != null) {
+                                val start = startDateMillis ?: 0L
+                                val end = endDateMillis ?: Long.MAX_VALUE
+                                annTimestamp in start..end
+                            } else {
+                                false // If parsing still fails, don't include it
+                            }
+                        }
+                        else -> true
+                    }
+
+                    matchesTitle && matchesTime
                 }
 
                 if (filteredAnn.size < 1){
