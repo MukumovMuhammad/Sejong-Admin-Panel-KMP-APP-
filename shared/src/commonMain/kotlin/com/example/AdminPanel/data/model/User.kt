@@ -14,7 +14,7 @@ data class User(
     val verification_status: String, // Pending, Approved, Rejected
     val group: String? = "",
     val group_id: String? = null,
-    val avatar_id: String? = null,
+    val avatar: String? = null,
     val date_joined: String? = null
 )
 

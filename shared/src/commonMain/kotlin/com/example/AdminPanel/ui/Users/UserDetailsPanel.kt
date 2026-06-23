@@ -1,7 +1,6 @@
 package com.example.AdminPanel.ui.users
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -72,7 +71,7 @@ fun UserDetailsPanel(user: User, onClose: () -> Unit) {
                             .background(Color.LightGray)
                     ) {
                         AsyncImage(
-                            model = user.avatar_id,
+                            model = user.avatar,
                             contentDescription = "Image Avatar",
                             modifier = Modifier.fillMaxSize()
                         )
@@ -205,14 +204,4 @@ fun UserDetailsPanel(user: User, onClose: () -> Unit) {
             }
         }
     }
-}
-
-@Composable
-fun DetailRow(label: String, value: String) {
-    com.example.AdminPanel.ui.components.DetailRow(label, value)
-}
-
-@Composable
-fun DetailSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    com.example.AdminPanel.ui.components.DetailSection(title, content)
 }

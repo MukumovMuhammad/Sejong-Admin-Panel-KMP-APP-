@@ -12,7 +12,6 @@ import kotlinx.coroutines.launch
 
 data class UsersUiState(
     val users: List<User> = emptyList(),
-    val filteredUsers: List<User> = emptyList(), // Added filtered list
     val isLoading: Boolean = false,
     val error: String? = null,
     val selectedUser: User? = null,
@@ -21,7 +20,8 @@ data class UsersUiState(
     val studentsCount: Int = 0,
     val teachersCount: Int = 0,
     val adminsCount: Int = 0,
-    val pendingCount: Int = 0
+    val pendingCount: Int = 0,
+    val usersGroups: List<String> = emptyList()
 )
 
 class UsersViewModel : ViewModel() {
@@ -43,12 +43,15 @@ class UsersViewModel : ViewModel() {
                 println("UserViewModel: Got users data! ${response}")
                 _uiState.value = _uiState.value.copy(
                     users = response.users,
-                    filteredUsers = filterUsers(response.users, _uiState.value.searchQuery),
                     totalCount = response.total,
                     studentsCount = response.users.count { it.status == "Student" },
                     teachersCount = response.users.count { it.status == "Teacher" },
                     adminsCount = response.users.count { it.status == "Admin" },
                     pendingCount = response.users.count { it.verification_status == "Pending" },
+                    usersGroups = response.users
+                        .mapNotNull { it.group }
+                        .filter { it.isNotBlank() }
+                        .distinct(),
                     isLoading = false
                 )
             } catch (e: Exception) {
@@ -58,21 +61,9 @@ class UsersViewModel : ViewModel() {
         }
     }
 
-    fun onSearchQueryChange(query: String) {
-        _uiState.value = _uiState.value.copy(
-            searchQuery = query,
-            filteredUsers = filterUsers(_uiState.value.users, query)
-        )
-    }
 
-    private fun filterUsers(users: List<User>, query: String): List<User> {
-        if (query.isBlank()) return users
-        return users.filter { user ->
-            user.fullname?.contains(query, ignoreCase = true) == true ||
-            user.username.contains(query, ignoreCase = true) ||
-            user.email?.contains(query, ignoreCase = true) == true
-        }
-    }
+
+
 
     fun selectUser(user: User?) {
         _uiState.value = _uiState.value.copy(selectedUser = user)

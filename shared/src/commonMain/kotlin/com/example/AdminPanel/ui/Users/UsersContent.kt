@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -28,12 +27,16 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.ui.components.*
-import com.example.AdminPanel.ui.announcements.FilterDropdown
 
 @Composable
 fun UsersContent(viewModel: UsersViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var panelWidth by remember { mutableStateOf(450.dp) }
+
+    var searchText by remember { mutableStateOf("") }
+    var statusSelected by remember { mutableStateOf("") }
+    var verificationSelected by remember { mutableStateOf("") }
+    var groupSelected by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Main Content Layer
@@ -42,12 +45,50 @@ fun UsersContent(viewModel: UsersViewModel) {
                 .fillMaxSize()
                 .padding(end = 0.dp)
         ) {
-            // Header
-            Column(modifier = Modifier.padding(bottom = 24.dp)) {
-                Text("Dashboard > Users", color = Color.Gray, fontSize = 12.sp)
-                HeaderText("Users Management")
-                Text("View, manage and organize all users in the system.", color = Color.Gray, fontSize = 14.sp)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 20.dp), // 👈 Gives space around the entire top bar
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left Side: Header Text (Takes up all available remaining space)
+                Column(
+                    modifier = Modifier.weight(1f) // 👈 CRITICAL: This pushes your buttons to the absolute right side
+                ) {
+                    Text("Dashboard > Users", color = Color.Gray, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HeaderText("Users Management")
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("View, manage and organize all users in the system.", color = Color.Gray, fontSize = 14.sp)
+                }
+
+                // Right Side: Action Buttons Container
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp) // 👈 Handles the space between each button perfectly
+                ) {
+                    SecondaryButton(
+                        text = "Import Students",
+                        onClick = {},
+                        modifier = Modifier.width(160.dp),
+                        icon = Icons.Default.Share
+                    )
+
+                    PrimaryButton(
+                        text = "Add User",
+                        onClick = {},
+                        modifier = Modifier.width(140.dp),
+                        icon = Icons.Default.Add
+                    )
+
+                    IconButton(onClick = { viewModel.loadUsers() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                }
             }
+
+
 
             // Stats Row
             Row(
@@ -70,34 +111,85 @@ fun UsersContent(viewModel: UsersViewModel) {
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 1.dp
             ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChange(it) },
-                        placeholder = { Text("Search users by name, username, email...") },
-                        modifier = Modifier.weight(2f),
-                        shape = RoundedCornerShape(8.dp),
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        singleLine = true
-                    )
-                    
-                    FilterDropdown("Status", Modifier.weight(0.8f))
-                    FilterDropdown("Verification", Modifier.weight(0.8f))
-                    FilterDropdown("Group", Modifier.weight(0.8f))
-                    
-                    TextButton(onClick = { viewModel.onSearchQueryChange("") }) { Text("Clear Filters") }
-                    
-                    IconButton(onClick = { viewModel.loadUsers() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.primary)
+
+                Column{
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchText,
+                            onValueChange = { searchText = it },
+                            placeholder = { Text("Search users by name, username, email...") },
+                            modifier = Modifier.weight(2f),
+                            shape = RoundedCornerShape(8.dp),
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            singleLine = true
+                        )
                     }
-                    
-                    SecondaryButton(text = "Import Students", onClick = {}, modifier = Modifier.width(160.dp), icon = Icons.Default.Share)
-                    PrimaryButton(text = "Add User", onClick = {}, modifier = Modifier.width(140.dp), icon = Icons.Default.Add)
+
+
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    )
+                    {
+                        FilterDropdown(
+                            label = "Status",
+                            options = listOf("All Statuses", "Student", "Guest", "Teacher", "Admin"),
+                            selectedOption = statusSelected.ifEmpty { "All Statuses" },
+                            onOptionSelected = { choice ->
+                                statusSelected = if (choice == "All Statuses") "" else choice
+                            },
+                            modifier = Modifier.weight(0.8f)
+                        )
+
+                        // 2. Verification Filter
+                        FilterDropdown(
+                            label = "Verification",
+                            options = listOf("All Verifications", "Approved", "Pending", "Rejected"),
+                            selectedOption = verificationSelected.ifEmpty { "All Verifications" },
+                            onOptionSelected = { choice ->
+                                verificationSelected = if (choice == "All Verifications") "" else choice
+                            },
+                            modifier = Modifier.weight(0.8f)
+                        )
+
+                        // 3. Group Filter
+                        FilterDropdown(
+                            label = "Group",
+                            options = listOf("All Groups") + uiState.usersGroups + "no groups",
+                            selectedOption = groupSelected.ifEmpty { "All Groups" },
+                            onOptionSelected = { choice ->
+                                groupSelected = if (choice == "All Groups") "" else choice
+                            },
+                            modifier = Modifier.weight(0.8f)
+                        )
+
+                        // 4. Clear Filters Interaction Button
+                        TextButton(
+                            onClick = {
+                                searchText = ""
+                                statusSelected = ""
+                                verificationSelected = ""
+                                groupSelected = ""
+                            }
+                        ) {
+                            Text(
+                                text = "Clear Filters",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+
+                    }
                 }
+
+
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -138,7 +230,48 @@ fun UsersContent(viewModel: UsersViewModel) {
                         )
                     }
                 } else {
-                    items(uiState.filteredUsers) { user ->
+                    val filteredUsers = uiState.users.filter { user ->
+                        // 1. Text Search Filter (Fullname, Username, or Email)
+                        val matchesSearch = searchText.isEmpty() ||
+                                user.fullname?.contains(searchText, ignoreCase = true) == true ||
+                                user.username.contains(searchText, ignoreCase = true) ||
+                                user.email?.contains(searchText, ignoreCase = true) == true
+
+                        // 2. Status Dropdown Filter
+                        val matchesStatus = statusSelected.isEmpty() ||
+                                statusSelected == "All Statuses" || // Optional: if you have an "All" option
+                                user.status.equals(statusSelected, ignoreCase = true)
+
+                        // 3. Verification Dropdown Filter
+                        val matchesVerification = verificationSelected.isEmpty() ||
+                                verificationSelected == "All" ||
+                                user.verification_status.equals(verificationSelected, ignoreCase = true)
+
+                        // 4. Group Dropdown Filter
+
+                        var matchesGroup = groupSelected.isEmpty() ||
+                                groupSelected == "All Groups" ||
+                                user.group?.equals(groupSelected, ignoreCase = true) == true
+
+                        if (groupSelected == "no groups"){
+                            matchesGroup =  user.group.isNullOrEmpty()
+                        }
+                        // Only keep the user if they satisfy ALL active conditions
+                        matchesSearch && matchesStatus && matchesVerification && matchesGroup
+                    }
+
+                    if (filteredUsers.size < 1){
+                        item{
+                            EmptyStateComponent(
+                                title = "Nothing was found!",
+                                icon = Icons.Default.Info,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            )
+                        }
+                    }
+                    items(filteredUsers) { user ->
                         UserRow(
                             user = user,
                             isSelected = uiState.selectedUser?.id == user.id,
@@ -232,7 +365,7 @@ fun UserRow(
                 ) {
                     if (!isLoading) {
                         AsyncImage(
-                            model = user.avatar_id,
+                            model = user.avatar,
                             contentDescription = "Image Avatar",
                             modifier = Modifier.fillMaxSize()
                         )

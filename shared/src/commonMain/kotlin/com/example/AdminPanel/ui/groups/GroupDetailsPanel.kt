@@ -21,8 +21,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.Group
 import com.example.AdminPanel.ui.components.*
-import com.example.AdminPanel.ui.users.DetailRow
-import com.example.AdminPanel.ui.users.DetailSection
+
 
 @Composable
 fun GroupDetailsPanel(group: Group, onClose: () -> Unit, onDelete: () -> Unit) {

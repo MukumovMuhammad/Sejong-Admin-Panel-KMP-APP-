@@ -51,7 +51,6 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
 
         // Main Content
         Column(modifier = Modifier.fillMaxSize()) {
-            TopBar(selectedTab = uiState.selectedTab)
             Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
                 when (uiState.selectedTab) {
                     AdminTab.Dashboard -> {
@@ -234,39 +233,6 @@ fun SidebarItem(
         if (expanded) {
             Spacer(modifier = Modifier.width(16.dp))
             Text(tab.name, color = Color.White, fontSize = 14.sp)
-        }
-    }
-}
-
-@Composable
-fun TopBar(selectedTab: AdminTab) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        HeaderText(selectedTab.name)
-        
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                placeholder = { Text("Search anything...") },
-                modifier = Modifier.width(300.dp),
-                shape = CircleShape,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = null) }
-            IconButton(onClick = {}) { Icon(Icons.Default.Star, contentDescription = null) }
         }
     }
 }

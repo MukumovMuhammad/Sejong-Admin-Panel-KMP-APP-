@@ -34,6 +34,7 @@ import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
 import kotlinx.coroutines.launch
+import kotlin.text.ifEmpty
 
 
 @Composable
@@ -41,38 +42,55 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
 
+    var searchText by remember { mutableStateOf("") }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        // Breadcrumbs & Title
-        Column(modifier = Modifier.padding(bottom = 24.dp)) {
-            Text("Dashboard > Announcements", color = Color.Gray, fontSize = 12.sp)
-            HeaderText("Announcements")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 20.dp), // 👈 Gives space around the entire top bar
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left Side: Header Text (Takes up all available remaining space)
+            Column(
+                modifier = Modifier.weight(1f) // 👈 CRITICAL: This pushes your buttons to the absolute right side
+            ) {
+                Text("Dashboard > Announcements", color = Color.Gray, fontSize = 12.sp)
+                HeaderText("Announcements")
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp) // 👈 Handles the space between each button perfectly
+            ) {
+
+                PrimaryButton(
+                    text = "Add Announcement",
+                    onClick = {showAddDialog = true},
+                    modifier = Modifier.width(140.dp),
+                    icon = Icons.Default.Add
+                )
+
+                IconButton(onClick = { viewModel.loadAnnouncements() }) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                }
+
+            }
         }
+
+
+
 
         // Stats Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatCard("Total Announcements", uiState.totalCount.toString(), "+3 this month", Icons.Default.Info, Modifier.weight(1f), isLoading = uiState.isLoading)
-            StatCard("Published", uiState.publishedCount.toString(), "+5 this month", Icons.Default.Send, Modifier.weight(1f),isLoading = uiState.isLoading)
-            StatCard("Drafts", uiState.draftsCount.toString(), "No change", Icons.Default.Edit, Modifier.weight(1f),isLoading = uiState.isLoading)
-            StatCard("Deleted", uiState.deletedCount.toString(), "+1 this month", Icons.Default.Delete, Modifier.weight(1f), isDanger = true, isLoading = uiState.isLoading)
-            
-            // Add Announcement Button Card
-            Surface(
-                onClick = { showAddDialog = true },
-                modifier = Modifier.weight(0.8f).height(100.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primary
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
-                    Text("Add Announcement", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                }
-            }
+            StatCard("Total Announcements", uiState.totalCount.toString(), "", Icons.Default.Info, Modifier.weight(1f), isLoading = uiState.isLoading)
+            StatCard("Published", uiState.publishedCount.toString(), "", Icons.Default.Send, Modifier.weight(1f),isLoading = uiState.isLoading)
+            StatCard("Drafts", uiState.draftsCount.toString(), "", Icons.Default.Edit, Modifier.weight(1f),isLoading = uiState.isLoading)
+            StatCard("Deleted", uiState.deletedCount.toString(), "", Icons.Default.Delete, Modifier.weight(1f), isDanger = true, isLoading = uiState.isLoading)
+
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -84,27 +102,26 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 1.dp
         ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = {},
-                    placeholder = { Text("Search by title or author...") },
-                    modifier = Modifier.weight(1.5f),
-                    shape = RoundedCornerShape(8.dp),
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
-                )
-                
-                FilterDropdown("All Languages", Modifier.weight(1f))
-                FilterDropdown("All Status", Modifier.weight(1f))
-                FilterDropdown("Select date range", Modifier.weight(1f), icon = Icons.Default.DateRange)
-                
-                IconButton(onClick = { viewModel.loadAnnouncements() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+
+            Column{
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = searchText,
+                        onValueChange = { searchText = it },
+                        placeholder = { Text("Search by title ...") },
+                        modifier = Modifier.weight(1.5f),
+                        shape = RoundedCornerShape(8.dp),
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                    )
                 }
+
+
+                
+
             }
         }
 
@@ -145,13 +162,33 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                 }
             }
             else{
-                items(uiState.announcements) { announcement ->
-                    AnnouncementRow(
-                        announcement = announcement,
-                        isLoading = uiState.isLoading,
-                        onDelete = { viewModel.deleteAnnouncement(announcement.id ?: "") }
-                    )
+                val filteredAnn = uiState.announcements.filter { announcement ->
+
+                    val matchesTitle = announcement.title_taj?.contains(searchText, ignoreCase = true) == true ||
+                            announcement.title_rus?.contains(searchText, ignoreCase = true) == true ||
+                            announcement.title_eng?.contains(searchText, ignoreCase = true) == true ||
+                            announcement.title_kor?.contains(searchText, ignoreCase = true) == true
+                    matchesTitle
                 }
+
+                if (filteredAnn.size < 1){
+                    item{
+                        EmptyStateComponent(
+                            title = "Nothing was found!",
+                            icon = Icons.Default.Info,
+                        )
+                    }
+                }
+                else{
+                    items(filteredAnn) { announcement ->
+                        AnnouncementRow(
+                            announcement = announcement,
+                            isLoading = uiState.isLoading,
+                            onDelete = { viewModel.deleteAnnouncement(announcement.id ?: "") }
+                        )
+                    }
+                }
+
             }
 
         }
@@ -179,10 +216,7 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
 }
 
 
-@Composable
-fun FilterDropdown(label: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
-    com.example.AdminPanel.ui.components.FilterDropdown(label, modifier, icon)
-}
+
 
 @Composable
 fun AnnouncementRow(
