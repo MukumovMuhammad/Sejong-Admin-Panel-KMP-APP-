@@ -3,11 +3,14 @@ package com.example.AdminPanel.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -21,7 +24,8 @@ fun AppDialog(
     onClose: () -> Unit,
     onOkClick: () -> Unit,
     confirmText: String = "OK",
-    dismissText: String = "Close"
+    dismissText: String = "Close",
+    isDanger: Boolean = false
 ) {
     BasicAlertDialog(
         onDismissRequest = onClose,
@@ -57,14 +61,14 @@ fun AppDialog(
                     // Header Accent Icon
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                        color = if (isDanger) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
                         modifier = Modifier.size(56.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 "!", 
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.ExtraBold
                             )
                         }
@@ -107,8 +111,63 @@ fun AppDialog(
                                 onOkClick()
                                 onClose()
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            containerColor = if (isDanger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ActionStatusDialog(
+    isLoading: Boolean,
+    isSuccess: Boolean,
+    error: String?,
+    onDismiss: () -> Unit
+) {
+    if (isLoading || isSuccess || error != null) {
+        BasicAlertDialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.padding(24.dp).widthIn(max = 300.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Processing...", fontWeight = FontWeight.Bold)
+                    } else if (isSuccess) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle, 
+                            contentDescription = null, 
+                            tint = Color(0xFF2E7D32),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Success!", fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        PrimaryButton(text = "OK", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
+                    } else if (error != null) {
+                        Icon(
+                            imageVector = Icons.Default.Warning, 
+                            contentDescription = null, 
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Error", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                        Text(error, textAlign = TextAlign.Center, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        PrimaryButton(text = "Close", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }

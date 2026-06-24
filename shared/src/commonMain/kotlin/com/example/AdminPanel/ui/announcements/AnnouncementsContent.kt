@@ -1,7 +1,7 @@
 package com.example.AdminPanel.ui.announcements
 
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,6 +42,8 @@ import kotlin.time.Instant
 fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var announcementToDelete by remember { mutableStateOf<Announcement?>(null) }
+    var panelWidth by remember { mutableStateOf(500.dp) }
 
     var searchText by remember { mutableStateOf("") }
 
@@ -51,210 +53,244 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
     var endDateMillis by remember { mutableStateOf<Long?>(null) }
 
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp), // 👈 Gives space around the entire top bar
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Left Side: Header Text (Takes up all available remaining space)
-            Column(
-                modifier = Modifier.weight(1f) // 👈 CRITICAL: This pushes your buttons to the absolute right side
-            ) {
-                Text("Dashboard > Announcements", color = Color.Gray, fontSize = 12.sp)
-                HeaderText("Announcements")
-            }
-
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp) // 👈 Handles the space between each button perfectly
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-
-                PrimaryButton(
-                    text = "Add Announcement",
-                    onClick = { showAddDialog = true },
-                    modifier = Modifier.width(300.dp),
-                    icon = Icons.Default.Add
-                )
-
-                IconButton(onClick = { viewModel.loadAnnouncements() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Dashboard > Announcements", color = Color.Gray, fontSize = 12.sp)
+                    HeaderText("Announcements")
                 }
 
-            }
-        }
-
-
-
-
-        // Stats Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StatCard("Total Announcements", uiState.totalCount.toString(), "", Icons.Default.Info, Modifier.weight(1f), isLoading = uiState.isLoading)
-            StatCard("Published", uiState.publishedCount.toString(), "", Icons.Default.Send, Modifier.weight(1f),isLoading = uiState.isLoading)
-            StatCard("Drafts", uiState.draftsCount.toString(), "", Icons.Default.Edit, Modifier.weight(1f),isLoading = uiState.isLoading)
-            StatCard("Deleted", uiState.deletedCount.toString(), "", Icons.Default.Delete, Modifier.weight(1f), isDanger = true, isLoading = uiState.isLoading)
-
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Filters Bar
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 1.dp
-        ) {
-
-            Column{
                 Row(
-                    modifier = Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = searchText,
-                        onValueChange = { searchText = it },
-                        placeholder = { Text("Search by title ...") },
-                        modifier = Modifier.weight(1.5f),
-                        shape = RoundedCornerShape(8.dp),
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+
+                    PrimaryButton(
+                        text = "Add Announcement",
+                        onClick = { showAddDialog = true },
+                        modifier = Modifier.width(300.dp),
+                        icon = Icons.Default.Add
                     )
 
-                    // Inside your filter row container:
-                    TimeRangeDropdown(
-                        selectedLabel = timeFilterLabel,
-                        onPresetSelected = { preset ->
-                            timeFilterLabel = preset
-                            // Clear manual timestamps if a quick preset is clicked
-                            startDateMillis = null
-                            endDateMillis = null
-                        },
-                        onCustomRangeSelected = { start, end ->
-                            startDateMillis = start
-                            endDateMillis = end
-                            if (start != null && end != null) {
-                                // Format timestamps into a display label (e.g., "Jun 10 - Jun 17")
-                                timeFilterLabel = "Custom Range Selected"
-                            }
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-
-                
-
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Table Header
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Title (Russian)", modifier = Modifier.weight(2.5f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text("Author", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text("Posted At", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text("Status", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-            Text("Actions", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold, fontSize = 13.sp, textAlign = TextAlign.Center)
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-
-            if (uiState.isLoading){
-                items(10) {
-                    AnnouncementRow(
-                        announcement = Announcement(),
-                        isLoading = true,
-                        onDelete = { }
-                    )
-                }
-            }
-            else if (uiState.error != null){
-               item{
-                   Text("Some error")
-               }
-                item{
-                    Text(uiState.error!!)
-                }
-            }
-            else{
-
-
-                val filteredAnn = uiState.announcements.filter { announcement ->
-                    // 1. Existing dynamic title search check
-                    val matchesTitle = searchText.isEmpty() ||
-                            announcement.title_taj?.contains(searchText, ignoreCase = true) == true ||
-                            announcement.title_rus?.contains(searchText, ignoreCase = true) == true ||
-                            announcement.title_eng?.contains(searchText, ignoreCase = true) == true ||
-                            announcement.title_kor?.contains(searchText, ignoreCase = true) == true
-
-                    // 2. Time Range Filter Check
-                    val matchesTime = when (timeFilterLabel) {
-
-
-                        "All Time" -> true
-
-                        "Custom Range Selected" -> {
-                            val annTimestamp = try {
-                                announcement.time_posted?.let { rawText ->
-                                    // 1. Replace the space between date and time with 'T'
-                                    // This converts "2026-06-23 07:55:52.235000+00:00"
-                                    // into "2026-06-23T07:55:52.235000+00:00"
-                                    val isoFormat = rawText.trim().replace(" ", "T")
-
-                                    Instant.parse(isoFormat).toEpochMilliseconds()
-                                }
-                            } catch (e: Exception) {
-                                println("Time parsing failed for: ${announcement.time_posted} due to ${e.message}")
-                                null
-                            }
-
-                            if (annTimestamp != null) {
-                                val start = startDateMillis ?: 0L
-                                val end = endDateMillis ?: Long.MAX_VALUE
-                                annTimestamp in start..end
-                            } else {
-                                false // If parsing still fails, don't include it
-                            }
-                        }
-                        else -> true
+                    IconButton(onClick = { viewModel.loadAnnouncements() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
 
-                    matchesTitle && matchesTime
                 }
+            }
 
-                if (filteredAnn.size < 1){
-                    item{
-                        EmptyStateComponent(
-                            title = "Nothing was found!",
-                            icon = Icons.Default.Info,
+
+
+
+            // Stats Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatCard("Total Announcements", uiState.totalCount.toString(), "", Icons.Default.Info, Modifier.weight(1f), isLoading = uiState.isLoading)
+                StatCard("Published", uiState.publishedCount.toString(), "", Icons.Default.Send, Modifier.weight(1f),isLoading = uiState.isLoading)
+                StatCard("Drafts", uiState.draftsCount.toString(), "", Icons.Default.Edit, Modifier.weight(1f),isLoading = uiState.isLoading)
+                StatCard("Deleted", uiState.deletedCount.toString(), "", Icons.Default.Delete, Modifier.weight(1f), isDanger = true, isLoading = uiState.isLoading)
+
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Filters Bar
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 1.dp
+            ) {
+
+                Column{
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchText,
+                            onValueChange = { searchText = it },
+                            placeholder = { Text("Search by title ...") },
+                            modifier = Modifier.weight(1.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) }
+                        )
+
+                        // Inside your filter row container:
+                        TimeRangeDropdown(
+                            selectedLabel = timeFilterLabel,
+                            onPresetSelected = { preset ->
+                                timeFilterLabel = preset
+                                // Clear manual timestamps if a quick preset is clicked
+                                startDateMillis = null
+                                endDateMillis = null
+                            },
+                            onCustomRangeSelected = { start, end ->
+                                startDateMillis = start
+                                endDateMillis = end
+                                if (start != null && end != null) {
+                                    // Format timestamps into a display label (e.g., "Jun 10 - Jun 17")
+                                    timeFilterLabel = "Custom Range Selected"
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
                         )
                     }
+
+
+                    
+
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Table Header
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Title (Russian)", modifier = Modifier.weight(2.5f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Author", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Posted At", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Status", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("Actions", modifier = Modifier.weight(1.2f), fontWeight = FontWeight.Bold, fontSize = 13.sp, textAlign = TextAlign.Center)
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+
+                if (uiState.isLoading && uiState.announcements.isEmpty()){
+                    items(10) {
+                        AnnouncementRow(
+                            announcement = Announcement(),
+                            isLoading = true,
+                            onClick = {},
+                            onDelete = { }
+                        )
+                    }
+                }
+                else if (uiState.error != null && uiState.announcements.isEmpty()){
+                   item{
+                       Text("Error loading announcements: ${uiState.error}")
+                   }
                 }
                 else{
-                    items(filteredAnn) { announcement ->
-                        AnnouncementRow(
-                            announcement = announcement,
-                            isLoading = uiState.isLoading,
-                            onDelete = { viewModel.deleteAnnouncement(announcement.id ?: "") }
-                        )
+
+
+                    val filteredAnn = uiState.announcements.filter { announcement ->
+                        // 1. Existing dynamic title search check
+                        val matchesTitle = searchText.isEmpty() ||
+                                announcement.title_taj?.contains(searchText, ignoreCase = true) == true ||
+                                announcement.title_rus?.contains(searchText, ignoreCase = true) == true ||
+                                announcement.title_eng?.contains(searchText, ignoreCase = true) == true ||
+                                announcement.title_kor?.contains(searchText, ignoreCase = true) == true
+
+                        // 2. Time Range Filter Check
+                        val matchesTime = when (timeFilterLabel) {
+
+
+                            "All Time" -> true
+
+                            "Custom Range Selected" -> {
+                                val annTimestamp = try {
+                                    announcement.time_posted?.let { rawText ->
+                                        // 1. Replace the space between date and time with 'T'
+                                        // This converts "2026-06-23 07:55:52.235000+00:00"
+                                        // into "2026-06-23T07:55:52.235000+00:00"
+                                        val isoFormat = rawText.trim().replace(" ", "T")
+
+                                        Instant.parse(isoFormat).toEpochMilliseconds()
+                                    }
+                                } catch (e: Exception) {
+                                    println("Time parsing failed for: ${announcement.time_posted} due to ${e.message}")
+                                    null
+                                }
+
+                                if (annTimestamp != null) {
+                                    val start = startDateMillis ?: 0L
+                                    val end = endDateMillis ?: Long.MAX_VALUE
+                                    annTimestamp in start..end
+                                } else {
+                                    false // If parsing still fails, don't include it
+                                }
+                            }
+                            else -> true
+                        }
+
+                        matchesTitle && matchesTime
                     }
+
+                    if (filteredAnn.isEmpty()){
+                        item{
+                            EmptyStateComponent(
+                                title = "Nothing was found!",
+                                icon = Icons.Default.Info,
+                            )
+                        }
+                    }
+                    else{
+                        items(filteredAnn) { announcement ->
+                            AnnouncementRow(
+                                announcement = announcement,
+                                isSelected = uiState.selectedAnnouncement?.id == announcement.id,
+                                isLoading = uiState.isLoading,
+                                onClick = { viewModel.selectAnnouncement(announcement) },
+                                onDelete = { announcementToDelete = announcement }
+                            )
+                        }
+                    }
+
                 }
 
             }
-
         }
+
+        
+        if (uiState.selectedAnnouncement != null){
+            // Side Panel for Details/Edit
+            AnimatedVisibility(
+                visible = uiState.selectedAnnouncement != null,
+                enter = slideInHorizontally(initialOffsetX = { it }),
+                exit = slideOutHorizontally(targetOffsetX = { it }),
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Box(modifier = Modifier.width(panelWidth).fillMaxHeight()) {
+                    AnnouncementDetailsPanel(
+                        announcement = uiState.selectedAnnouncement!!,
+                        onClose = { viewModel.selectAnnouncement(null) },
+                        onUpdate = { id, titles, contents, images ->
+                            viewModel.updateAnnouncement(
+                                id = id,
+                                titleRus = titles[0],
+                                titleTaj = titles[1],
+                                titleEng = titles[2],
+                                titleKor = titles[3],
+                                contentRus = contents[0],
+                                contentTaj = contents[1],
+                                contentEng = contents[2],
+                                contentKor = contents[3],
+                                images = images
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
 
         if (showAddDialog) {
             AddAnnouncementSidePanel(
@@ -275,6 +311,29 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                 }
             )
         }
+
+        // Delete Confirmation Dialog
+        if (announcementToDelete != null) {
+            AppDialog(
+                title = "Delete Announcement?",
+                message = "Are you sure you want to delete '${announcementToDelete?.title_rus}'? This action cannot be undone.",
+                onClose = { announcementToDelete = null },
+                onOkClick = {
+                    announcementToDelete?.id?.let { viewModel.deleteAnnouncement(it) }
+                    announcementToDelete = null
+                },
+                confirmText = "Delete",
+                isDanger = true
+            )
+        }
+
+        // Action Status Dialog (Loading, Success, Error)
+        ActionStatusDialog(
+            isLoading = uiState.isActionLoading,
+            isSuccess = uiState.actionSuccess,
+            error = uiState.error,
+            onDismiss = { viewModel.resetActionState() }
+        )
     }
 }
 
@@ -283,11 +342,12 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
 
 @Composable
 fun AnnouncementRow(
-    announcement: Announcement?, // Make optional so you can pass null when loading
+    announcement: Announcement?,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {},
     onDelete: () -> Unit,
-    isLoading: Boolean = false // <-- Added loading state flag
+    isLoading: Boolean = false
 ) {
-    // 1. Only parse date fields if we are NOT loading real data
     var formattedDate = ""
     var formattedTime = ""
     var imageUrl: String? = null
@@ -314,10 +374,13 @@ fun AnnouncementRow(
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth().height(80.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .clickable(enabled = !isLoading, onClick = onClick),
         shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.5.dp
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
+        tonalElevation = if (isSelected) 2.dp else 0.5.dp
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -329,7 +392,7 @@ fun AnnouncementRow(
                     .size(50.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.LightGray.copy(alpha = 0.3f))
-                    .shimmerLoadingAnimation(isLoading) // Shimmer on image block
+                    .shimmerLoadingAnimation(isLoading)
             ) {
                 if (!isLoading) {
                     AsyncImage(
@@ -363,7 +426,7 @@ fun AnnouncementRow(
                     modifier = Modifier
                         .size(24.dp)
                         .background(Color.LightGray.copy(alpha = 0.3f), CircleShape)
-                        .shimmerLoadingAnimation(isLoading) // Shimmer on author profile circle
+                        .shimmerLoadingAnimation(isLoading)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 if (isLoading) {
@@ -406,8 +469,8 @@ fun AnnouncementRow(
                         Box(modifier = Modifier.padding(horizontal = 4.dp).size(24.dp).background(Color.LightGray.copy(alpha = 0.3f), CircleShape).shimmerLoadingAnimation(true))
                     }
                 } else {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
-                    IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
+                    IconButton(onClick = onClick) { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = onClick) { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
                     IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.7f)) }
                 }
             }
@@ -434,18 +497,14 @@ fun AddAnnouncementSidePanel(
 
     val scope = rememberCoroutineScope()
 
-    // 2. State to hold the chosen image byte arrays
     var selectedImages by remember { mutableStateOf<List<ByteArray>>(emptyList()) }
 
-    // 3. Configure the FileKit image picker launcher
     val launcher = rememberFilePickerLauncher(
         type = PickerType.Image,
-        mode = PickerMode.Multiple() // Allows picking up to 10 images
+        mode = PickerMode.Multiple()
     ) { files ->
-        // This runs after the user selects their files
         if (files != null) {
             scope.launch {
-                // Read all files securely into platform-safe ByteArrays
                 selectedImages = files.map { it.readBytes() }
             }
         }
@@ -500,14 +559,13 @@ fun AddAnnouncementSidePanel(
                 Text("Images (Optional)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 4. Clickable container to launch file picker
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp)
                         .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
                         .background(Color.White)
-                        .clickable { launcher.launch() }, // Opens gallery instantly!
+                        .clickable { launcher.launch() },
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -517,7 +575,6 @@ fun AddAnnouncementSidePanel(
                     }
                 }
 
-                // 5. Visual counter showing how many files were successfully loaded
                 AnimatedVisibility(visible = selectedImages.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
