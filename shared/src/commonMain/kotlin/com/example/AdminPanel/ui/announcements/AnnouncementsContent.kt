@@ -46,12 +46,10 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
     var announcementToDelete by remember { mutableStateOf<Announcement?>(null) }
     var panelWidth by remember { mutableStateOf(500.dp) }
 
-    var searchText by remember { mutableStateOf("") }
-
-
     var timeFilterLabel by remember { mutableStateOf("All Time") }
-    var startDateMillis by remember { mutableStateOf<Long?>(null) }
-    var endDateMillis by remember { mutableStateOf<Long?>(null) }
+
+    val filteredAnn by viewModel.filteredAnn.collectAsState()
+    val filterQuery by viewModel.filterQuery.collectAsState()
 
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -120,8 +118,10 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedTextField(
-                            value = searchText,
-                            onValueChange = { searchText = it },
+                            value = filterQuery.search,
+                            onValueChange = { text ->
+                                viewModel.updateFilter { it.copy(search = text) }
+                           },
                             placeholder = { Text("Search by title ...") },
                             modifier = Modifier.weight(1.5f),
                             shape = RoundedCornerShape(8.dp),
@@ -134,12 +134,10 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                             onPresetSelected = { preset ->
                                 timeFilterLabel = preset
                                 // Clear manual timestamps if a quick preset is clicked
-                                startDateMillis = null
-                                endDateMillis = null
+                                viewModel.updateFilter { it.copy(startDate = null, endDate = null) }
                             },
                             onCustomRangeSelected = { start, end ->
-                                startDateMillis = start
-                                endDateMillis = end
+                                viewModel.updateFilter { it.copy(startDate = start, endDate = end) }
                                 if (start != null && end != null) {
                                     // Format timestamps into a display label (e.g., "Jun 10 - Jun 17")
                                     timeFilterLabel = "Custom Range Selected"
@@ -148,9 +146,6 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                             modifier = Modifier.weight(1f)
                         )
                     }
-
-
-                    
 
                 }
             }
@@ -191,50 +186,6 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                 }
                 else{
 
-
-                    val filteredAnn = uiState.announcements.filter { announcement ->
-                        // 1. Existing dynamic title search check
-                        val matchesTitle = searchText.isEmpty() ||
-                                announcement.title_taj?.contains(searchText, ignoreCase = true) == true ||
-                                announcement.title_rus?.contains(searchText, ignoreCase = true) == true ||
-                                announcement.title_eng?.contains(searchText, ignoreCase = true) == true ||
-                                announcement.title_kor?.contains(searchText, ignoreCase = true) == true
-
-                        // 2. Time Range Filter Check
-                        val matchesTime = when (timeFilterLabel) {
-
-
-                            "All Time" -> true
-
-                            "Custom Range Selected" -> {
-                                val annTimestamp = try {
-                                    announcement.time_posted?.let { rawText ->
-                                        // 1. Replace the space between date and time with 'T'
-                                        // This converts "2026-06-23 07:55:52.235000+00:00"
-                                        // into "2026-06-23T07:55:52.235000+00:00"
-                                        val isoFormat = rawText.trim().replace(" ", "T")
-
-                                        Instant.parse(isoFormat).toEpochMilliseconds()
-                                    }
-                                } catch (e: Exception) {
-                                    println("Time parsing failed for: ${announcement.time_posted} due to ${e.message}")
-                                    null
-                                }
-
-                                if (annTimestamp != null) {
-                                    val start = startDateMillis ?: 0L
-                                    val end = endDateMillis ?: Long.MAX_VALUE
-                                    annTimestamp in start..end
-                                } else {
-                                    false // If parsing still fails, don't include it
-                                }
-                            }
-                            else -> true
-                        }
-
-                        matchesTitle && matchesTime
-                    }
-
                     if (filteredAnn.isEmpty()){
                         item{
                             EmptyStateComponent(
@@ -259,7 +210,6 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
 
             }
         }
-
 
         if (uiState.selectedAnnouncement != null){
             // Side Panel for Details/Edit
@@ -350,15 +300,13 @@ fun AnnouncementRow(
     isLoading: Boolean = false
 ) {
     val (formattedDate, formattedTime) = announcement?.time_posted.getFormattedTimeOfPost()
-    var imageUrl: String? = null
 
-    if (!isLoading && announcement != null) {
-        imageUrl = if (announcement.images.isNotEmpty() && announcement.images[0].url.isNotBlank()) {
+    var imageUrl: String? = if (!announcement?.images.isNullOrEmpty() && !announcement?.images[0]?.url.isNullOrEmpty()) {
             announcement.images[0].url
         } else {
             null
         }
-    }
+
 
     Surface(
         modifier = Modifier

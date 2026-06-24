@@ -1,5 +1,6 @@
 package com.example.AdminPanel.data.model
 
+import com.example.AdminPanel.data.utills.Filterable
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,7 +17,13 @@ data class User(
     val group_id: String? = null,
     val avatar: String? = null,
     val date_joined: String? = null
-)
+): Filterable{
+    override fun matchesSearch(query: String) =
+        fullname?.contains(query, true) == true || username.contains(query, true) || email?.contains(query, true) == true
+
+    override fun primaryCategory() = status
+    override fun secondaryCategory() = verification_status
+}
 
 @Serializable
 data class UserListResponse(

@@ -5,10 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.example.AdminPanel.data.api.AnnouncementApi
 import com.example.AdminPanel.data.model.Announcement
 import com.example.AdminPanel.data.network.HttpClientFactory
+import com.example.AdminPanel.data.utills.FilterQuery
+import com.example.AdminPanel.data.utills.applyGlobalFilter
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.collections.emptyList
 
 data class AnnouncementsUiState(
     val announcements: List<Announcement> = emptyList(),
@@ -29,6 +36,18 @@ class AnnouncementsViewModel : ViewModel() {
     
     private val _uiState = MutableStateFlow(AnnouncementsUiState())
     val uiState: StateFlow<AnnouncementsUiState> = _uiState.asStateFlow()
+
+    val filterQuery = MutableStateFlow(FilterQuery())
+
+    // Complete background pipeline runs effortlessly using a single line
+    val filteredAnn = combine(_uiState.map { it.announcements }, filterQuery) { list, query ->
+        list.applyGlobalFilter(query)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList<Announcement>()
+    )
+
 
     init {
         loadAnnouncements()
@@ -58,6 +77,9 @@ class AnnouncementsViewModel : ViewModel() {
                 )
             }
         }
+    }
+    fun updateFilter(update: (FilterQuery) -> FilterQuery) {
+        filterQuery.value = update(filterQuery.value)
     }
 
     fun selectAnnouncement(announcement: Announcement?) {

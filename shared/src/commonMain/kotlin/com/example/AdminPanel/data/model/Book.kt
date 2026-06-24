@@ -1,6 +1,8 @@
 package com.example.AdminPanel.data.model
 
+import com.example.AdminPanel.data.utills.Filterable
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 data class Book(
@@ -21,7 +23,19 @@ data class Book(
     val cover_id: String? = null,
     val file: String? = null,
     val file_id: String? = null
-)
+): Filterable{
+    override fun matchesSearch(query: String): Boolean = title_rus?.contains(query, true) == true || title_taj?.contains(query, true) == true
+
+    override fun primaryCategory(): String? = genres
+
+    override fun recordTimestamp(): Long? = try {
+        // Your Instant.parse conversion logic safely handled inside the model container!
+        published_date?.let { Instant.parse(it.trim().replace(" ", "T")).toEpochMilliseconds() }
+    } catch(e: Exception) { null }
+
+
+
+}
 
 @Serializable
 data class BookListResponse(

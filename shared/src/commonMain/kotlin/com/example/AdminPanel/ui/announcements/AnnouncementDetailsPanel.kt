@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.Announcement
+import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
@@ -47,6 +48,8 @@ fun AnnouncementDetailsPanel(
 
     var selectedImages by remember { mutableStateOf<List<ByteArray>?>(null) }
     val scope = rememberCoroutineScope()
+
+    val (data,time) = announcement.time_posted.getFormattedTimeOfPost()
 
     val launcher = rememberFilePickerLauncher(
         type = PickerType.Image,
@@ -89,7 +92,7 @@ fun AnnouncementDetailsPanel(
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Posted: ", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(announcement.time_posted ?: "-", fontSize = 13.sp)
+                        Text("${data} at ${time}" ?: "-", fontSize = 13.sp)
                     }
                 }
             }
