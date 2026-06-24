@@ -27,7 +27,8 @@ fun AppTextField(
     modifier: Modifier = Modifier,
     leadingIcon: ImageVector? = null,
     singleLine: Boolean = true,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    isReadOnly: Boolean = false
 ) {
     Column(modifier = modifier) {
         Text(
@@ -37,6 +38,7 @@ fun AppTextField(
             modifier = Modifier.padding(bottom = 8.dp)
         )
         OutlinedTextField(
+            readOnly = isReadOnly,
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
@@ -60,7 +62,7 @@ fun AppPasswordTextField(
     label: String,
     placeholder: String,
     modifier: Modifier = Modifier,
-    leadingIcon: ImageVector? = null
+    leadingIcon: ImageVector? = null,
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 

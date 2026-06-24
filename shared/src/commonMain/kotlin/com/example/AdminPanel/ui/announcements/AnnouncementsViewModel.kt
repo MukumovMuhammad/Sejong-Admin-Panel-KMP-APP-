@@ -159,12 +159,13 @@ class AnnouncementsViewModel : ViewModel() {
             }
         }
     }
+
+
+
     
     fun resetActionState() {
         _uiState.value = _uiState.value.copy(error = null, actionSuccess = false, isActionLoading = false)
     }
 
-    fun resetState() {
-        _uiState.value = _uiState.value.copy(error = null, isSuccess = false)
-    }
+
 }

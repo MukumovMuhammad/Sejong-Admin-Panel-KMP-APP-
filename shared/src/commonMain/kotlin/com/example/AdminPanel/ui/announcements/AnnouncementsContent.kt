@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.Announcement
+import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
@@ -348,28 +349,14 @@ fun AnnouncementRow(
     onDelete: () -> Unit,
     isLoading: Boolean = false
 ) {
-    var formattedDate = ""
-    var formattedTime = ""
+    val (formattedDate, formattedTime) = announcement?.time_posted.getFormattedTimeOfPost()
     var imageUrl: String? = null
 
     if (!isLoading && announcement != null) {
-        val timePosted = announcement.time_posted
         imageUrl = if (announcement.images.isNotEmpty() && announcement.images[0].url.isNotBlank()) {
             announcement.images[0].url
         } else {
             null
-        }
-
-        if (!timePosted.isNullOrBlank()) {
-            val parts = timePosted.split(" ")
-            if (parts.size >= 2) {
-                val datePart = parts[0]
-                val timePart = parts[1]
-                val timePieces = timePart.split(":")
-                val datePieces = datePart.split("-")
-                if (datePieces.size >= 3) formattedDate = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
-                if (timePieces.size >= 2) formattedTime = "${timePieces[0]}/${timePieces[1]}"
-            }
         }
     }
 

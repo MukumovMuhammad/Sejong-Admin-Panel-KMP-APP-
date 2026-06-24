@@ -34,6 +34,7 @@ fun AnnouncementDetailsPanel(
     onClose: () -> Unit,
     onUpdate: (String, List<String>, List<String>, List<ByteArray>?) -> Unit
 ) {
+    var isEdittble by remember{mutableStateOf(false)}
     var titleRus by remember(announcement) { mutableStateOf(announcement.title_rus ?: "") }
     var titleTaj by remember(announcement) { mutableStateOf(announcement.title_taj ?: "") }
     var titleEng by remember(announcement) { mutableStateOf(announcement.title_eng ?: "") }
@@ -96,28 +97,49 @@ fun AnnouncementDetailsPanel(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Titles Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically)
+            {
             Text("Titles", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Edit",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    PrimarySwitchButton(
+                        checked = isEdittble,
+                        onCheckedChange = { isEdittble = it }
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = titleRus, onValueChange = { titleRus = it }, label = "Title (Russian)", placeholder = "Enter Russian title", modifier = Modifier.fillMaxWidth())
+            AppTextField(isReadOnly = !isEdittble,value = titleRus, onValueChange = { titleRus = it }, label = "Title (Russian)", placeholder = "Enter Russian title", modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = titleTaj, onValueChange = { titleTaj = it }, label = "Title (Tajik)", placeholder = "Enter Tajik title", modifier = Modifier.fillMaxWidth())
+            AppTextField(isReadOnly = !isEdittble,value = titleTaj, onValueChange = { titleTaj = it }, label = "Title (Tajik)", placeholder = "Enter Tajik title", modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = titleEng, onValueChange = { titleEng = it }, label = "Title (English)", placeholder = "Enter English title", modifier = Modifier.fillMaxWidth())
+            AppTextField(isReadOnly = !isEdittble,value = titleEng, onValueChange = { titleEng = it }, label = "Title (English)", placeholder = "Enter English title", modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = titleKor, onValueChange = { titleKor = it }, label = "Title (Korean)", placeholder = "Enter Korean title", modifier = Modifier.fillMaxWidth())
+            AppTextField(isReadOnly = !isEdittble,value = titleKor, onValueChange = { titleKor = it }, label = "Title (Korean)", placeholder = "Enter Korean title", modifier = Modifier.fillMaxWidth())
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Contents Section
             Text("Contents", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = contentRus, onValueChange = { contentRus = it }, label = "Content (Russian)", placeholder = "Enter Russian content", modifier = Modifier.fillMaxWidth(), singleLine = false)
+            AppTextField(isReadOnly = !isEdittble,value = contentRus, onValueChange = { contentRus = it }, label = "Content (Russian)", placeholder = "Enter Russian content", modifier = Modifier.fillMaxWidth(), singleLine = false)
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = contentTaj, onValueChange = { contentTaj = it }, label = "Content (Tajik)", placeholder = "Enter Tajik content", modifier = Modifier.fillMaxWidth(), singleLine = false)
+            AppTextField(isReadOnly = !isEdittble,value = contentTaj, onValueChange = { contentTaj = it }, label = "Content (Tajik)", placeholder = "Enter Tajik content", modifier = Modifier.fillMaxWidth(), singleLine = false)
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = contentEng, onValueChange = { contentEng = it }, label = "Content (English)", placeholder = "Enter English content", modifier = Modifier.fillMaxWidth(), singleLine = false)
+            AppTextField(isReadOnly = !isEdittble,value = contentEng, onValueChange = { contentEng = it }, label = "Content (English)", placeholder = "Enter English content", modifier = Modifier.fillMaxWidth(), singleLine = false)
             Spacer(modifier = Modifier.height(12.dp))
-            AppTextField(value = contentKor, onValueChange = { contentKor = it }, label = "Content (Korean)", placeholder = "Enter Korean content", modifier = Modifier.fillMaxWidth(), singleLine = false)
+            AppTextField(isReadOnly = !isEdittble,value = contentKor, onValueChange = { contentKor = it }, label = "Content (Korean)", placeholder = "Enter Korean content", modifier = Modifier.fillMaxWidth(), singleLine = false)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -131,27 +153,31 @@ fun AnnouncementDetailsPanel(
                         AsyncImage(
                             model = image.url,
                             contentDescription = null,
-                            modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp))
+                            modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp))
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
-                    .background(Color.White)
-                    .clickable { launcher.launch() },
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray)
-                    Text("Click to replace images", color = Color.Gray, fontSize = 12.sp)
+
+            if (isEdittble){
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .clickable { launcher.launch() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.Gray)
+                        Text("Click to replace images", color = Color.Gray, fontSize = 12.sp)
+                    }
                 }
             }
+
 
             AnimatedVisibility(visible = selectedImages != null) {
                 Spacer(modifier = Modifier.height(8.dp))
