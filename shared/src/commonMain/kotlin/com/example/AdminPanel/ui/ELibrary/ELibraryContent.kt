@@ -1,7 +1,6 @@
 package com.example.AdminPanel.ui.ELibrary
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,16 +21,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.example.AdminPanel.PlatformStorageManager
 import com.example.AdminPanel.data.model.Book
+import com.example.AdminPanel.data.network.PdfDownloader
 import com.example.AdminPanel.ui.components.*
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
-import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 
 @Composable
@@ -42,6 +42,11 @@ fun ELibraryContent(viewModel: ELibraryViewModel) {
     
     var searchText by remember { mutableStateOf("") }
     var selectedGenre by remember { mutableStateOf("All Genres") }
+
+    val scope = rememberCoroutineScope()
+
+    val storageManager = remember { PlatformStorageManager() }
+    val downloader = remember { PdfDownloader(HttpClient(), storageManager) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -154,7 +159,22 @@ fun ELibraryContent(viewModel: ELibraryViewModel) {
                     items(filteredBooks) { book ->
                         BookCard(
                             book = book,
-                            onClick = { viewModel.selectBook(book) }
+                            onClick = { viewModel.selectBook(book) },
+                            onDownloadClick = {
+                                scope.launch {
+                                    val targetUrl = book.file ?: return@launch
+
+                                    // Format the string cleanly with no spaces and the correct .pdf extension
+                                    val cleanFileName = "${book.author}_${book.title_rus}".replace(" ", "_") + ".pdf"
+
+                                    // One method handles the network fetch AND opens the folder picker!
+                                    val savedPath = downloader.downloadAndSaveWithDialog(targetUrl, cleanFileName)
+
+                                    if (savedPath != null) {
+                                        println("Saved successfully to: $savedPath")
+                                    }
+                                }
+                            }
                         )
                     }
                 }
@@ -226,7 +246,7 @@ fun ELibraryContent(viewModel: ELibraryViewModel) {
 }
 
 @Composable
-fun BookCard(book: Book, onClick: () -> Unit) {
+fun BookCard(book: Book, onClick: () -> Unit, onDownloadClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
@@ -294,8 +314,8 @@ fun BookCard(book: Book, onClick: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(text = book.published_date ?: "", fontSize = 11.sp, color = Color.Gray)
-                    IconButton(onClick = { /* Preview/Download */ }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    IconButton(onClick = onDownloadClick, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     }
                 }
             }

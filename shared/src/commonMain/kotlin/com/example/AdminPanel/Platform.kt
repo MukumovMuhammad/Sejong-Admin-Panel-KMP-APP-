@@ -5,3 +5,10 @@ interface Platform {
 }
 
 expect fun getPlatform(): Platform
+
+
+// commonMain
+expect class PlatformStorageManager() {
+    suspend fun savePdf(fileName: String, bytes: ByteArray): String?
+    suspend fun savePdfWithDialog(suggestedName: String, bytes: ByteArray): String?
+}

@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 import com.example.AdminPanel.ui.components.*
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
+fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, mobile: Boolean = false) {
     val uiState by viewModel.uiState.collectAsState()
 
     var rememberChecked by remember { mutableStateOf(false) }
@@ -45,38 +45,43 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
     }
 
     Row(modifier = Modifier.fillMaxSize()) {
-        // Left Side: Branding
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(1f)
-                .background(MaterialTheme.colorScheme.primary), // Use Theme Primary
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(48.dp)) {
-                // Logo
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .background(Color.White, shape = RoundedCornerShape(24.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("S", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
+
+
+        if (!mobile){
+            // Left Side: Branding
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(1f)
+                    .background(MaterialTheme.colorScheme.primary), // Use Theme Primary
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(48.dp)) {
+                    // Logo
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .background(Color.White, shape = RoundedCornerShape(24.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("S", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
+                    }
+                    Spacer(modifier = Modifier.height(32.dp))
+                    HeaderText(
+                        "Admin Panel",
+                        color = Color.White,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    BodyText(
+                        "Manage users, classes, schedules, announcements and more.",
+                        color = Color.White.copy(alpha = 0.8f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
-                Spacer(modifier = Modifier.height(32.dp))
-                HeaderText(
-                    "Admin Panel",
-                    color = Color.White,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                BodyText(
-                    "Manage users, classes, schedules, announcements and more.",
-                    color = Color.White.copy(alpha = 0.8f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
             }
         }
+
 
         // Right Side: Login Form
         Box(
@@ -85,7 +90,8 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit) {
                 .weight(1.2f)
                 .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
-        ) {
+        )
+        {
             Column(
                 modifier = Modifier
                     .widthIn(max = 440.dp)

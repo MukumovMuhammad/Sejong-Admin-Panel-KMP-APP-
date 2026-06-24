@@ -22,7 +22,7 @@ enum class Screen {
 }
 
 @Composable
-fun App() {
+fun App(mobile: Boolean = false) {
     AdminPanelTheme {
         var currentScreen by remember { mutableStateOf(Screen.Login) }
         val loginViewModel: LoginViewModel = viewModel(
@@ -41,7 +41,8 @@ fun App() {
                         viewModel = loginViewModel,
                         onLoginSuccess = {
                             currentScreen = Screen.AdminPanel
-                        }
+                        },
+                        mobile = mobile
                     )
                 }
                 Screen.AdminPanel -> {
