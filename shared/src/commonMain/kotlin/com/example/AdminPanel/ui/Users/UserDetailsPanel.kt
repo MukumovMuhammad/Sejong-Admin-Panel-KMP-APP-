@@ -19,25 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.User
+import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
 
 @Composable
 fun UserDetailsPanel(user: User, onClose: () -> Unit, onDelete: () -> Unit) {
 
-    var formattedDate = ""
-    var formattedTime = ""
+    val (formattedDate,formattedTime ) = user.date_joined.getFormattedTimeOfPost()
 
-    if (!user.date_joined.isNullOrBlank()) {
-        val parts = user.date_joined.split(" ")
-        if (parts.size >= 2) {
-            val datePart = parts[0]
-            val timePart = parts[1]
-            val timePieces = timePart.split(":")
-            val datePieces = datePart.split("-")
-            if (datePieces.size >= 3) formattedDate = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
-            if (timePieces.size >= 2) formattedTime = "${timePieces[0]}/${timePieces[1]}"
-        }
-    }
     Surface(
         modifier = Modifier
             .fillMaxHeight(),
@@ -127,7 +116,7 @@ fun UserDetailsPanel(user: User, onClose: () -> Unit, onDelete: () -> Unit) {
                     DetailRow("Email", user.email ?: "-")
                     DetailRow("Phone Number", user.phone_number ?: "-")
                     DetailRow("Date of Birth", user.date_of_birth ?: "-")
-                    DetailRow("Date Joined", user.date_joined ?: "-")
+                    DetailRow("Date Joined", "${formattedDate} at ${formattedTime} " ?: "-")
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

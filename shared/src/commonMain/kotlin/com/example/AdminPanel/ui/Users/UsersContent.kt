@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.User
+import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
 
 @Composable
@@ -329,20 +330,8 @@ fun UserRow(
     isLoading: Boolean = false
 ) {
 
-    var formattedDate = ""
-    var formattedTime = ""
-
-    if (!user.date_joined.isNullOrBlank()) {
-        val parts = user.date_joined.split(" ")
-        if (parts.size >= 2) {
-            val datePart = parts[0]
-            val timePart = parts[1]
-            val timePieces = timePart.split(":")
-            val datePieces = datePart.split("-")
-            if (datePieces.size >= 3) formattedDate = "${datePieces[0]}/${datePieces[1]}/${datePieces[2]}"
-            if (timePieces.size >= 2) formattedTime = "${timePieces[0]}/${timePieces[1]}"
-        }
-    }
+    val (formattedDate,formattedTime ) = user.date_joined.getFormattedTimeOfPost()
+    
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -428,6 +417,7 @@ fun UserRow(
                     Spacer(modifier = Modifier.height(6.dp))
                     Box(modifier = Modifier.width(50.dp).height(11.dp).background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp)).shimmerLoadingAnimation(true))
                 } else {
+
                     Text(formattedDate, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                     Text(formattedTime, fontSize = 11.sp, color = Color.Gray)
                 }
