@@ -259,7 +259,7 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
             }
         }
 
-        
+
         if (uiState.selectedAnnouncement != null){
             // Side Panel for Details/Edit
             AnimatedVisibility(

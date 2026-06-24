@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 data class UsersUiState(
     val users: List<User> = emptyList(),
     val isLoading: Boolean = false,
+
     val error: String? = null,
     val selectedUser: User? = null,
     val searchQuery: String = "", // Added search query
@@ -21,7 +22,9 @@ data class UsersUiState(
     val teachersCount: Int = 0,
     val adminsCount: Int = 0,
     val pendingCount: Int = 0,
-    val usersGroups: List<String> = emptyList()
+    val usersGroups: List<String> = emptyList(),
+    val isActionLoading: Boolean = false,
+    val actionSuccess: Boolean = false
 )
 
 class UsersViewModel : ViewModel() {
@@ -70,16 +73,22 @@ class UsersViewModel : ViewModel() {
     }
 
     fun deleteUser(userId: String) {
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
         viewModelScope.launch {
             try {
                 api.deleteUser(userId)
+                _uiState.value = _uiState.value.copy(isActionLoading = false, actionSuccess = true)
                 loadUsers()
                 if (_uiState.value.selectedUser?.id == userId) {
-                    selectUser(null)
+                    _uiState.value = _uiState.value.copy(selectedUser = null)
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = e.message)
+                _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
             }
         }
+    }
+
+    fun resetActionState() {
+        _uiState.value = _uiState.value.copy(error = null, actionSuccess = false, isActionLoading = false)
     }
 }

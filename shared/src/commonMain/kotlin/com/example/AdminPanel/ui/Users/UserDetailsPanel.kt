@@ -22,7 +22,7 @@ import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.ui.components.*
 
 @Composable
-fun UserDetailsPanel(user: User, onClose: () -> Unit) {
+fun UserDetailsPanel(user: User, onClose: () -> Unit, onDelete: () -> Unit) {
 
     var formattedDate = ""
     var formattedTime = ""
@@ -191,7 +191,7 @@ fun UserDetailsPanel(user: User, onClose: () -> Unit) {
                         Text("Change Status", fontSize = 13.sp)
                     }
                     OutlinedButton(
-                        onClick = {},
+                        onClick = onDelete,
                         modifier = Modifier.weight(0.8f).height(44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)

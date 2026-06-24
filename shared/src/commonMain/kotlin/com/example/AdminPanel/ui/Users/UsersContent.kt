@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +39,8 @@ fun UsersContent(viewModel: UsersViewModel) {
     var verificationSelected by remember { mutableStateOf("") }
     var groupSelected by remember { mutableStateOf("") }
 
+    var userToDelete by remember { mutableStateOf<User?>(null) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Main Content Layer
         Column(
@@ -54,7 +57,7 @@ fun UsersContent(viewModel: UsersViewModel) {
             ) {
                 // Left Side: Header Text (Takes up all available remaining space)
                 Column(
-                    modifier = Modifier.weight(1f) // 👈 CRITICAL: This pushes your buttons to the absolute right side
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("Dashboard > Users", color = Color.Gray, fontSize = 12.sp)
                     Spacer(modifier = Modifier.height(4.dp))
@@ -277,7 +280,7 @@ fun UsersContent(viewModel: UsersViewModel) {
                             isSelected = uiState.selectedUser?.id == user.id,
                             isLoading = uiState.isLoading,
                             onClick = { viewModel.selectUser(user) },
-                            onDelete = { viewModel.deleteUser(user.id) }
+                            onDelete = { userToDelete = user }
                         )
                     }
                 }
@@ -310,11 +313,34 @@ fun UsersContent(viewModel: UsersViewModel) {
 
                     UserDetailsPanel(
                         user = uiState.selectedUser!!,
-                        onClose = { viewModel.selectUser(null) }
+                        onClose = { viewModel.selectUser(null) },
+                        onDelete = {userToDelete = uiState.selectedUser}
                     )
                 }
             }
         }
+
+        if (userToDelete != null){
+            AppDialog(
+                title = "Delete User?",
+                message = "Are you sure you want to delete '${userToDelete?.fullname}'? This action cannot be undone.",
+                onClose = { userToDelete = null },
+                onOkClick = {
+                    userToDelete?.id?.let { viewModel.deleteUser(it) }
+                    userToDelete = null
+                },
+                confirmText = "Delete",
+                isDanger = true
+            )
+        }
+
+
+        ActionStatusDialog(
+            isLoading = uiState.isActionLoading,
+            isSuccess = uiState.actionSuccess,
+            error = uiState.error,
+            onDismiss = { viewModel.resetActionState() }
+        )
 
     }
 }

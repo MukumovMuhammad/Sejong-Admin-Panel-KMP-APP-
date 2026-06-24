@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 import com.example.AdminPanel.ui.components.*
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, mobile: Boolean = false) {
+fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, isMobile: Boolean = false) {
     val uiState by viewModel.uiState.collectAsState()
 
     var rememberChecked by remember { mutableStateOf(false) }
@@ -47,7 +47,7 @@ fun LoginScreen(viewModel: LoginViewModel, onLoginSuccess: () -> Unit, mobile: B
     Row(modifier = Modifier.fillMaxSize()) {
 
 
-        if (!mobile){
+        if (!isMobile){
             // Left Side: Branding
             Box(
                 modifier = Modifier

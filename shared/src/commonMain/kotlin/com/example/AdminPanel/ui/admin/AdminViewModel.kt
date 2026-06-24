@@ -5,9 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class AdminTab {
-    Dashboard, Users, PendingApprovals, Groups, Schedules, Announcements, Notifications, ELibrary, Settings, ActivityLogs
-}
+
 
 data class AdminUiState(
     val isSidebarExpanded: Boolean = true,

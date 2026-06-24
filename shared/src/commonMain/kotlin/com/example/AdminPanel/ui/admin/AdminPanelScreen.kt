@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.AdminPanel.ui.profile.SettingsScreen
@@ -35,81 +36,101 @@ import com.example.AdminPanel.ui.groups.GroupsContent
 import com.example.AdminPanel.ui.groups.GroupsViewModel
 
 @Composable
-fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
+fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit, isMobile: Boolean = false) {
     val uiState by viewModel.uiState.collectAsState()
     val sidebarWidth by animateDpAsState(if (uiState.isSidebarExpanded) 250.dp else 80.dp)
 
-    Row(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // Sidebar
-        Sidebar(
-            expanded = uiState.isSidebarExpanded,
+    // 1. Adaptive Root Conditional Router
+    if (isMobile) {
+        MobileAdminLayout(
             selectedTab = uiState.selectedTab,
             onTabSelected = viewModel::selectTab,
-            onToggle = viewModel::toggleSidebar,
-            width = sidebarWidth,
-            username = uiState.username,
-            role = uiState.role
-        )
+            onLogOut = onLogOut
+        ) {
+            // Mobile Specific Padding Setup
+            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                MainContent(selectedTab = uiState.selectedTab, onLogOut = onLogOut)
+            }
+        }
+    } else {
+        // Desktop Layout (Untouched, runs exactly as before)
+        Row(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            Sidebar(
+                expanded = uiState.isSidebarExpanded,
+                selectedTab = uiState.selectedTab,
+                onTabSelected = viewModel::selectTab,
+                onToggle = viewModel::toggleSidebar,
+                width = sidebarWidth,
+                username = uiState.username,
+                role = uiState.role
+            )
 
-        // Main Content
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-                when (uiState.selectedTab) {
-                    AdminTab.Dashboard -> {
-                        val dashboardViewModel: DashboardViewModel = viewModel(
-                            factory = viewModelFactory {
-                                initializer { DashboardViewModel() }
-                            }
-                        )
-                        DashboardContent(dashboardViewModel)
-                    }
-                    AdminTab.Users -> {
-                        val usersViewModel: UsersViewModel = viewModel(
-                            factory = viewModelFactory {
-                                initializer { UsersViewModel() }
-                            }
-                        )
-                        UsersContent(usersViewModel)
-                    }
-                    AdminTab.PendingApprovals -> PlaceholderContent("Pending Approvals")
-                    AdminTab.Groups -> {
-                        val groupsViewModel: GroupsViewModel = viewModel(
-                            factory = viewModelFactory {
-                                initializer { GroupsViewModel() }
-                            }
-                        )
-                        GroupsContent(groupsViewModel)
-                    }
-                    AdminTab.Schedules -> PlaceholderContent("Schedules")
-                    AdminTab.Announcements -> {
-                        val announcementsViewModel: AnnouncementsViewModel = viewModel(
-                            factory = viewModelFactory {
-                                initializer { AnnouncementsViewModel() }
-                            }
-                        )
-                        AnnouncementsContent(announcementsViewModel)
-                    }
-                    AdminTab.Notifications -> PlaceholderContent("Notifications")
-                    AdminTab.ELibrary -> {
-                        val eLibViewModel: ELibraryViewModel = viewModel(
-                            factory = viewModelFactory{
-                                initializer{ELibraryViewModel()}
-                            }
-                        )
-                        ELibraryContent(eLibViewModel)
-                    }
-                    AdminTab.Settings -> {
-                        SettingsScreen (
-                            onBackClick = {},
-                            onLogoutClick = {
-                                onLogOut()
-                            }
-                        )
-                    }
-                    AdminTab.ActivityLogs -> PlaceholderContent("Activity Logs")
+            Column(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                    MainContent(selectedTab = uiState.selectedTab, onLogOut = onLogOut)
                 }
             }
         }
+    }
+}
+
+
+@Composable
+fun MainContent(selectedTab: AdminTab, onLogOut: ()->Unit){
+
+    when (selectedTab) {
+        AdminTab.Dashboard -> {
+            val dashboardViewModel: DashboardViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { DashboardViewModel() }
+                }
+            )
+            DashboardContent(dashboardViewModel)
+        }
+        AdminTab.Users -> {
+            val usersViewModel: UsersViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { UsersViewModel() }
+                }
+            )
+            UsersContent(usersViewModel)
+        }
+        AdminTab.PendingApprovals -> PlaceholderContent("Pending Approvals")
+        AdminTab.Groups -> {
+            val groupsViewModel: GroupsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { GroupsViewModel() }
+                }
+            )
+            GroupsContent(groupsViewModel)
+        }
+        AdminTab.Schedules -> PlaceholderContent("Schedules")
+        AdminTab.Announcements -> {
+            val announcementsViewModel: AnnouncementsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { AnnouncementsViewModel() }
+                }
+            )
+            AnnouncementsContent(announcementsViewModel)
+        }
+        AdminTab.Notifications -> PlaceholderContent("Notifications")
+        AdminTab.ELibrary -> {
+            val eLibViewModel: ELibraryViewModel = viewModel(
+                factory = viewModelFactory{
+                    initializer{ELibraryViewModel()}
+                }
+            )
+            ELibraryContent(eLibViewModel)
+        }
+        AdminTab.Settings -> {
+            SettingsScreen (
+                onBackClick = {},
+                onLogoutClick = {
+                    onLogOut()
+                }
+            )
+        }
+        AdminTab.ActivityLogs -> PlaceholderContent("Activity Logs")
     }
 }
 
@@ -119,7 +140,7 @@ fun Sidebar(
     selectedTab: AdminTab,
     onTabSelected: (AdminTab) -> Unit,
     onToggle: () -> Unit,
-    width: androidx.compose.ui.unit.Dp,
+    width: Dp,
     username: String,
     role: String
 ) {
