@@ -25,6 +25,8 @@ import com.example.AdminPanel.ui.components.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.AdminPanel.ui.ELibrary.ELibraryContent
+import com.example.AdminPanel.ui.ELibrary.ELibraryViewModel
 import com.example.AdminPanel.ui.announcements.AnnouncementsContent
 import com.example.AdminPanel.ui.announcements.AnnouncementsViewModel
 import com.example.AdminPanel.ui.users.UsersContent
@@ -88,7 +90,14 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit) {
                         AnnouncementsContent(announcementsViewModel)
                     }
                     AdminTab.Notifications -> PlaceholderContent("Notifications")
-                    AdminTab.ELibrary -> PlaceholderContent("E-Library")
+                    AdminTab.ELibrary -> {
+                        val eLibViewModel: ELibraryViewModel = viewModel(
+                            factory = viewModelFactory{
+                                initializer{ELibraryViewModel()}
+                            }
+                        )
+                        ELibraryContent(eLibViewModel)
+                    }
                     AdminTab.Settings -> {
                         SettingsScreen (
                             onBackClick = {},
