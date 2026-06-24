@@ -34,10 +34,8 @@ fun UsersContent(viewModel: UsersViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var panelWidth by remember { mutableStateOf(450.dp) }
 
-    var searchText by remember { mutableStateOf("") }
-    var statusSelected by remember { mutableStateOf("") }
-    var verificationSelected by remember { mutableStateOf("") }
-    var groupSelected by remember { mutableStateOf("") }
+    val filteredUsers by viewModel.filteredUsers.collectAsState()
+    val filterQuery by viewModel.filterQuery.collectAsState()
 
     var userToDelete by remember { mutableStateOf<User?>(null) }
 
@@ -122,8 +120,10 @@ fun UsersContent(viewModel: UsersViewModel) {
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedTextField(
-                            value = searchText,
-                            onValueChange = { searchText = it },
+                            value = filterQuery.search,
+                            onValueChange = { text->
+                                viewModel.updateFilter{it.copy(search = text)}
+                            },
                             placeholder = { Text("Search users by name, username, email...") },
                             modifier = Modifier.weight(2f),
                             shape = RoundedCornerShape(8.dp),
@@ -140,33 +140,35 @@ fun UsersContent(viewModel: UsersViewModel) {
                     )
                     {
                         FilterDropdown(
-                            label = "Status",
+                            label = filterQuery.category,
                             options = listOf("All Statuses", "Student", "Guest", "Teacher", "Admin"),
-                            selectedOption = statusSelected.ifEmpty { "All Statuses" },
+                            selectedOption = filterQuery.category.ifEmpty { "All Statuses" },
                             onOptionSelected = { choice ->
-                                statusSelected = if (choice == "All Statuses") "" else choice
+                                viewModel.updateFilter{it.copy(category = if (choice == "All Statuses") "" else choice)}
                             },
                             modifier = Modifier.weight(0.8f)
                         )
 
                         // 2. Verification Filter
                         FilterDropdown(
-                            label = "Verification",
+                            label = filterQuery.subCategory,
                             options = listOf("All Verifications", "Approved", "Pending", "Rejected"),
-                            selectedOption = verificationSelected.ifEmpty { "All Verifications" },
+                            selectedOption = filterQuery.subCategory.ifEmpty { "All Verifications" },
                             onOptionSelected = { choice ->
-                                verificationSelected = if (choice == "All Verifications") "" else choice
+                                viewModel.updateFilter{it.copy(subCategory = if (choice == "All Verifications") "" else choice)}
+
                             },
                             modifier = Modifier.weight(0.8f)
                         )
 
                         // 3. Group Filter
                         FilterDropdown(
-                            label = "Group",
+                            label = filterQuery.group,
                             options = listOf("All Groups") + uiState.usersGroups + "no groups",
-                            selectedOption = groupSelected.ifEmpty { "All Groups" },
+                            selectedOption = filterQuery.group.ifEmpty { "All Groups" },
                             onOptionSelected = { choice ->
-                                groupSelected = if (choice == "All Groups") "" else choice
+                                viewModel.updateFilter{it.copy(group = if (choice == "All Groups") "" else choice)}
+
                             },
                             modifier = Modifier.weight(0.8f)
                         )
@@ -174,10 +176,12 @@ fun UsersContent(viewModel: UsersViewModel) {
                         // 4. Clear Filters Interaction Button
                         TextButton(
                             onClick = {
-                                searchText = ""
-                                statusSelected = ""
-                                verificationSelected = ""
-                                groupSelected = ""
+                                viewModel.updateFilter{it.copy(
+                                    group = "All Groups",
+                                    search = "",
+                                    category = "All status",
+                                    subCategory = "All verifications"
+                                )}
                             }
                         ) {
                             Text(
@@ -233,35 +237,6 @@ fun UsersContent(viewModel: UsersViewModel) {
                         )
                     }
                 } else {
-                    val filteredUsers = uiState.users.filter { user ->
-                        // 1. Text Search Filter (Fullname, Username, or Email)
-                        val matchesSearch = searchText.isEmpty() ||
-                                user.fullname?.contains(searchText, ignoreCase = true) == true ||
-                                user.username.contains(searchText, ignoreCase = true) ||
-                                user.email?.contains(searchText, ignoreCase = true) == true
-
-                        // 2. Status Dropdown Filter
-                        val matchesStatus = statusSelected.isEmpty() ||
-                                statusSelected == "All Statuses" || // Optional: if you have an "All" option
-                                user.status.equals(statusSelected, ignoreCase = true)
-
-                        // 3. Verification Dropdown Filter
-                        val matchesVerification = verificationSelected.isEmpty() ||
-                                verificationSelected == "All" ||
-                                user.verification_status.equals(verificationSelected, ignoreCase = true)
-
-                        // 4. Group Dropdown Filter
-
-                        var matchesGroup = groupSelected.isEmpty() ||
-                                groupSelected == "All Groups" ||
-                                user.group?.equals(groupSelected, ignoreCase = true) == true
-
-                        if (groupSelected == "no groups"){
-                            matchesGroup =  user.group.isNullOrEmpty()
-                        }
-                        // Only keep the user if they satisfy ALL active conditions
-                        matchesSearch && matchesStatus && matchesVerification && matchesGroup
-                    }
 
                     if (filteredUsers.size < 1){
                         item{

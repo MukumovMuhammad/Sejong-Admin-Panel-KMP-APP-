@@ -3,11 +3,18 @@ package com.example.AdminPanel.ui.users
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.AdminPanel.data.api.UserApi
+import com.example.AdminPanel.data.model.Announcement
 import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.data.network.HttpClientFactory
+import com.example.AdminPanel.data.utills.FilterQuery
+import com.example.AdminPanel.data.utills.applyGlobalFilter
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class UsersUiState(
@@ -32,6 +39,18 @@ class UsersViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(UsersUiState())
     val uiState: StateFlow<UsersUiState> = _uiState.asStateFlow()
+
+    val filterQuery = MutableStateFlow(FilterQuery())
+
+    // Complete background pipeline runs effortlessly using a single line
+    val filteredUsers = combine(_uiState.map { it.users }, filterQuery) { list, query ->
+        list.applyGlobalFilter(query)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList<User>()
+    )
+
 
     init {
         loadUsers()
@@ -67,6 +86,9 @@ class UsersViewModel : ViewModel() {
 
 
 
+    fun updateFilter(update: (FilterQuery) -> FilterQuery) {
+        filterQuery.value = update(filterQuery.value)
+    }
 
     fun selectUser(user: User?) {
         _uiState.value = _uiState.value.copy(selectedUser = user)

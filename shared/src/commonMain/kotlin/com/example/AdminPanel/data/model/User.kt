@@ -11,8 +11,8 @@ data class User(
     val email: String? = null,
     val phone_number: String? = null,
     val date_of_birth: String? = null,
-    val status: String, // Guest, Student, Teacher, Admin
-    val verification_status: String, // Pending, Approved, Rejected
+    val status: String,
+    val verification_status: String,
     val group: String? = "",
     val group_id: String? = null,
     val avatar: String? = null,
@@ -21,8 +21,11 @@ data class User(
     override fun matchesSearch(query: String) =
         fullname?.contains(query, true) == true || username.contains(query, true) || email?.contains(query, true) == true
 
+    
+
     override fun primaryCategory() = status
     override fun secondaryCategory() = verification_status
+    override fun group(): String? = group
 }
 
 @Serializable

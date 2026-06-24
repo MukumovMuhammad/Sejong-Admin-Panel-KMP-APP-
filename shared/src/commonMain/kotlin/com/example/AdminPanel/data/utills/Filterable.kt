@@ -8,6 +8,7 @@ interface Filterable {
     // Optional tags for dropdown categorizations
     fun primaryCategory(): String? = null
     fun secondaryCategory(): String? = null
+    fun group(): String? = null
     fun recordTimestamp(): Long? = null
 }
 
@@ -22,6 +23,11 @@ fun <T : Filterable> List<T>.applyGlobalFilter(query: FilterQuery): List<T> {
                 query.category == "All Groups" ||
                 item.primaryCategory().equals(query.category, ignoreCase = true)
 
+
+        val matchSubCategory = query.subCategory.isEmpty() ||
+                query.subCategory == "All" ||
+                item.secondaryCategory().equals(query.subCategory, ignoreCase = true)
+
         // 3. Time bounds match
         val itemTime = item.recordTimestamp()
         val matchesTime = if (query.startDate != null && itemTime != null) {
@@ -30,6 +36,15 @@ fun <T : Filterable> List<T>.applyGlobalFilter(query: FilterQuery): List<T> {
             true
         }
 
-        matchesText && matchesPrimary && matchesTime
+        val itemGroup = item.group()
+        var matchesGroup = query.group.isEmpty() ||
+                query.group == "All Groups" ||
+                itemGroup.equals(query.group, ignoreCase = true)
+
+        if (query.group == "no groups") {
+            matchesGroup = itemGroup.isNullOrEmpty()
+        }
+
+        matchesText && matchesPrimary && matchSubCategory && matchesTime && matchesGroup
     }
 }
