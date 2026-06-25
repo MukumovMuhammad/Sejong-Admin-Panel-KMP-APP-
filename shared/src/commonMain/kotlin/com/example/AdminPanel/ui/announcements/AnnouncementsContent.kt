@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +35,7 @@ import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.Announcement
 import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
+import com.example.AdminPanel.ui.users.UserDetailsPanel
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
@@ -219,7 +224,21 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                 exit = slideOutHorizontally(targetOffsetX = { it }),
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                Box(modifier = Modifier.width(panelWidth).fillMaxHeight()) {
+                Row(modifier = Modifier.width(panelWidth).fillMaxHeight()) {
+                    // Resize Handle (Draggable Area)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .width(4.dp)
+                            .background(Color.Transparent)
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    panelWidth = (panelWidth - dragAmount.x.toDp()).coerceIn(350.dp, 800.dp)
+                                }
+                            }
+                    )
                     AnnouncementDetailsPanel(
                         announcement = uiState.selectedAnnouncement!!,
                         onClose = { viewModel.selectAnnouncement(null) },
@@ -240,6 +259,7 @@ fun AnnouncementsContent(viewModel: AnnouncementsViewModel) {
                     )
                 }
             }
+
         }
 
 
