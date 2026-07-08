@@ -31,6 +31,13 @@ object SessionManager {
             else settings.remove("user_status")
         }
 
+    var refresh_token: String?
+        get() = settings.getStringOrNull("refresh_token")
+        set(value){
+            if (value != null) settings.putString("refresh_token", value)
+            else settings.remove("refresh_token")
+        }
+
     // 5. Verification Status String
     var verificationStatus: String?
         get() = settings.getStringOrNull("verify_status")

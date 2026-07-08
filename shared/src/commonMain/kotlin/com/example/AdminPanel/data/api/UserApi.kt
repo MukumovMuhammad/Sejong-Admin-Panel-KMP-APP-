@@ -42,6 +42,22 @@ class UserApi(private val client: HttpClient) {
         }.body()
     }
 
+    suspend fun verifyUser(userId: String, action: String): UserResponse {
+        val cleanId = userId.removePrefix("users/")
+        return client.post("users/admin/verify/$cleanId/") {
+            contentType(ContentType.Application.Json)
+            setBody(mapOf("action" to action))
+        }.body()
+    }
+
+    suspend fun setStatus(userId: String, status: String): UserResponse {
+        val cleanId = userId.removePrefix("users/")
+        return client.post("users/admin/set-status/$cleanId/") {
+            contentType(ContentType.Application.Json)
+            setBody(mapOf("status" to status))
+        }.body()
+    }
+
     // Assuming delete exists based on UI
     suspend fun deleteUser(userId: String): UserResponse {
         val cleanId = userId.removePrefix("users/")

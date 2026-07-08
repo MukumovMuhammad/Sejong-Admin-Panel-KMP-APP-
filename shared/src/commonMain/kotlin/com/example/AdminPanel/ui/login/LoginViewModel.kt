@@ -38,7 +38,7 @@ class LoginViewModel : ViewModel() {
     fun login(username: String, password:String,rememberUser: Boolean) {
 
         val currentState = _uiState.value
-        print("LoginViewModel: Login with ${username} and ${password}")
+        println("LoginViewModel: Login with ${username} and ${password}")
         if (username.isBlank() || password.isBlank()) {
             _uiState.value = currentState.copy(error = "Username and password cannot be empty")
             return
@@ -55,7 +55,8 @@ class LoginViewModel : ViewModel() {
             try {
                 val response = authApi.login(
                     username = username,
-                    password = password
+                    password = password,
+                    device_token = "dvX8Ouj_SxOwHiBqxYSG0t:APA91bEYSTFQIykTLp6HOGwr0hecT1RXciBwFzLBlhV_hyOFhog-SuZn5VYhZFD0ZbdZgxr5jX6bMlDY8Q26feWhZZ4W-z_KGinpiN4kHYjReqtXvI_9nr8"
                 )
 
                 when (response.status) {
@@ -64,9 +65,19 @@ class LoginViewModel : ViewModel() {
                         println("Login fetch the status is ok!")
                         val loginResponse = response.body<LoginResponse>()
                         println("The response is ${loginResponse}")
+
+                        if (loginResponse.status != "Admin"){
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                error = "You are not an Admin! You shall not pass!"
+                            )
+                            return@launch
+                        }
+
                         SessionManager.rememberMe = rememberUser
                         SessionManager.token = loginResponse.token
                         SessionManager.status = loginResponse.status
+                        SessionManager.refresh_token = loginResponse.refresh_token
                         SessionManager.verificationStatus = loginResponse.verificationStatus
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,

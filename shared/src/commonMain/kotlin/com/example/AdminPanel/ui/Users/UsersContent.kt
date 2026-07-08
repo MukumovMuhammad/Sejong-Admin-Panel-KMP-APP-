@@ -31,6 +31,7 @@ import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
+import com.example.AdminPanel.ui.theme.*
 
 @Composable
 fun UsersContent(viewModel: UsersViewModel) {
@@ -236,6 +237,7 @@ fun UsersContent(viewModel: UsersViewModel) {
                             isSelected = false,
                             isLoading = true,
                             onClick = {},
+                            onApprove = {},
                             onDelete = {}
                         )
                     }
@@ -258,6 +260,7 @@ fun UsersContent(viewModel: UsersViewModel) {
                             isSelected = uiState.selectedUser?.id == user.id,
                             isLoading = uiState.isLoading,
                             onClick = { viewModel.selectUser(user) },
+                            onApprove = { viewModel.approveUser(user.id) },
                             onDelete = { userToDelete = user }
                         )
                     }
@@ -292,8 +295,9 @@ fun UsersContent(viewModel: UsersViewModel) {
 
                     UserDetailsPanel(
                         user = uiState.selectedUser!!,
+                        viewModel = viewModel,
                         onClose = { viewModel.selectUser(null) },
-                        onDelete = {userToDelete = uiState.selectedUser}
+                        onDelete = { userToDelete = uiState.selectedUser }
                     )
                 }
             }
@@ -329,6 +333,7 @@ fun UserRow(
     user: User,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onApprove: () -> Unit,
     onDelete: () -> Unit,
     isLoading: Boolean = false
 ) {
@@ -427,15 +432,35 @@ fun UserRow(
             }
 
             // Actions
-            Row(modifier = Modifier.weight(1.2f), horizontalArrangement = Arrangement.Center) {
+            Row(modifier = Modifier.weight(1.2f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 if (isLoading) {
                     repeat(3) {
                         Box(modifier = Modifier.padding(horizontal = 4.dp).size(24.dp).background(Color.LightGray.copy(alpha = 0.3f), CircleShape).shimmerLoadingAnimation(true))
                     }
                 } else {
-                    IconButton(onClick = onClick) { Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
-                    IconButton(onClick = {}) { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Gray) }
-                    IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.7f)) }
+                    // Button 1: Approve (if Pending) OR Edit
+                    if (user.verification_status == "Pending") {
+                        IconButton(
+                            onClick = onApprove,
+                            colors = IconButtonDefaults.iconButtonColors(contentColor = Success)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = "Approve", modifier = Modifier.size(20.dp))
+                        }
+                    } else {
+                        IconButton(onClick = onClick) { 
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(18.dp), tint = Color.Gray) 
+                        }
+                    }
+                    
+                    // Button 2: Details/Info
+                    IconButton(onClick = onClick) { 
+                        Icon(Icons.Default.Info, contentDescription = "Details", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) 
+                    }
+                    
+                    // Button 3: Delete
+                    IconButton(onClick = onDelete) { 
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(18.dp), tint = Color.Red.copy(alpha = 0.7f)) 
+                    }
                 }
             }
         }
@@ -445,19 +470,19 @@ fun UserRow(
 @Composable
 fun StatusBadge(status: String) {
     val color = when (status) {
-        "Student" -> Color(0xFFE8F5E9) to Color(0xFF2E7D32)
-        "Teacher" -> Color(0xFFE3F2FD) to Color(0xFF1976D2)
-        "Admin" -> Color(0xFFF3E5F5) to Color(0xFF7B1FA2)
-        else -> Color(0xFFF5F5F5) to Color(0xFF616161)
+        "Student" -> Success.copy(alpha = 0.1f) to Success
+        "Teacher" -> BrandBlue.copy(alpha = 0.1f) to BrandBlue
+        "Admin" -> BrandRed.copy(alpha = 0.1f) to BrandRed
+        else -> Color(0xFFF1F5F9) to Color(0xFF64748B)
     }
     Surface(
         color = color.first,
-        shape = RoundedCornerShape(4.dp)
+        shape = RoundedCornerShape(6.dp)
     ) {
         Text(
             status, 
             color = color.second, 
-            fontSize = 10.sp, 
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold, 
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
@@ -467,20 +492,20 @@ fun StatusBadge(status: String) {
 @Composable
 fun VerificationBadge(status: String) {
     val (bgColor, textColor, icon) = when (status) {
-        "Approved" -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), Icons.Default.CheckCircle)
-        "Pending" -> Triple(Color(0xFFFFF3E0), Color(0xFFFF9800), Icons.Default.Refresh)
-        "Rejected" -> Triple(Color(0xFFFFEBEE), Color(0xFFC62828), Icons.Default.Close)
-        else -> Triple(Color(0xFFF5F5F5), Color(0xFF616161), Icons.Default.Info)
+        "Approved" -> Triple(Success.copy(alpha = 0.1f), Success, Icons.Default.CheckCircle)
+        "Pending" -> Triple(Warning.copy(alpha = 0.1f), Warning, Icons.Default.Refresh)
+        "Rejected" -> Triple(BrandRed.copy(alpha = 0.1f), BrandRed, Icons.Default.Close)
+        else -> Triple(Color(0xFFF1F5F9), Color(0xFF64748B), Icons.Default.Info)
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(bgColor)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp), tint = textColor)
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(status, color = textColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(status, color = textColor, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
     }
 }

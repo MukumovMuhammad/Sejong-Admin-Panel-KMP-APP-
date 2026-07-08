@@ -14,11 +14,11 @@ class AuthApi(
     suspend fun login(
         username: String,
         password: String,
-        deviceToken: String? = null
+        device_token: String
     ): HttpResponse {
         return client.post("users/login/") {
             contentType(ContentType.Application.Json)
-            setBody(LoginRequest(username, password, deviceToken))
+            setBody(LoginRequest(username, password, device_token))
         }
     }
 

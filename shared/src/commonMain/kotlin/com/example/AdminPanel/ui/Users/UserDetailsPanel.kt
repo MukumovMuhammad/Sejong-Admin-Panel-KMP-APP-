@@ -1,11 +1,10 @@
 package com.example.AdminPanel.ui.users
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -15,179 +14,187 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
+import com.example.AdminPanel.ui.theme.BrandBlue
+import com.example.AdminPanel.ui.theme.Success
 
 @Composable
-fun UserDetailsPanel(user: User, onClose: () -> Unit, onDelete: () -> Unit) {
+fun UserDetailsPanel(
+    user: User,
+    viewModel: UsersViewModel,
+    onClose: () -> Unit,
+    onDelete: (User) -> Unit
+) {
+    val (formattedDate, formattedTime) = user.date_joined.getFormattedTimeOfPost()
+    var selectedTab by remember { mutableStateOf(UserTabs.PERINFO) }
+    var isEditable by remember { mutableStateOf(false) }
+    var showAvatarPreview by remember { mutableStateOf(false) }
 
-    val (formattedDate,formattedTime ) = user.date_joined.getFormattedTimeOfPost()
+    // Editable fields
+    var fullname by remember(user) { mutableStateOf(user.fullname ?: "") }
+    var email by remember(user) { mutableStateOf(user.email ?: "") }
+    var phoneNumber by remember(user) { mutableStateOf(user.phone_number ?: "") }
+    var dob by remember(user) { mutableStateOf(user.date_of_birth ?: "") }
+    var status by remember(user) { mutableStateOf(user.status) }
+    var password: String by remember(user) { mutableStateOf("") }
 
-    Surface(
-        modifier = Modifier
-            .fillMaxHeight(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 4.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+    DetailPanelLayout(
+        title = "User Details",
+        onClose = onClose,
+        footerContent = {
+            if (isEditable) {
+                Button(
+                    onClick = {
+                        val updates = mutableMapOf<String, String?>()
+                        if (fullname != user.fullname) updates["fullname"] = fullname
+                        if (email != user.email) updates["email"] = email
+                        if (phoneNumber != user.phone_number) updates["phone_number"] = phoneNumber
+                        if (dob != user.date_of_birth) updates["date_of_birth"] = dob
+                        if (status != user.status) updates["status"] = status
+                        if (password.isNullOrEmpty()) updates["password"] = password
+
+                        if (updates.isNotEmpty()) {
+                            viewModel.updateUser(user.id, updates)
+                        }
+                        isEditable = false
+                    },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Save Changes", fontWeight = FontWeight.Bold)
+                }
+            } else {
+                if (user.verification_status == "Pending") {
+                    Button(
+                        onClick = { viewModel.approveUser(user.id) },
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Success)
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Approve User", fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = { isEditable = true },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, BrandBlue),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = BrandBlue)
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Edit Profile", fontWeight = FontWeight.Bold)
+                }
+
+                IconButton(
+                    onClick = { onDelete(user) },
+                    colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete User")
+                }
+            }
+        }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Header
-            Row(
-                modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                HeaderText("User Details", modifier = Modifier.padding(bottom = 0.dp))
-                IconButton(onClick = onClose) { Icon(Icons.Default.Close, contentDescription = null) }
+        // --- PROFILE HEADER ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+
+
+            HoverableImage(
+                avatarUrl = user.avatar,
+                Mymodifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF1F5F9)),
+                contentDescription = "Avatar",
+                ImageOnHover = if(isEditable) Icons.Default.Edit else Icons.Default.Check
+            ){
+                showAvatarPreview = true
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
-            ) {
-                // Profile Header
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Color.LightGray)
-                    ) {
-                        AsyncImage(
-                            model = user.avatar,
-                            contentDescription = "Image Avatar",
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(user.fullname ?: "No Name", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        VerificationBadge(user.verification_status)
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(user.email ?: "No Email", fontSize = 14.sp, color = Color.Gray)
-                        Text(user.phone_number ?: "No Phone", fontSize = 14.sp, color = Color.Gray)
-                        
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            StatusBadge(user.status)
-                            Surface(color = Color(0xFFF3E5F5), shape = RoundedCornerShape(4.dp)) {
-                                Text(user.group ?: "No Group", color = Color(0xFF7B1FA2), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-                            }
-                            Text("ID: ${user.id.take(8)}...", fontSize = 10.sp, color = Color.Gray)
+            if (showAvatarPreview) {
+                ImagePreviewDialog(
+                    imageUrl = user.avatar,
+                    title = "Profile Photo",
+                    width = 500.dp,
+                    height = 500.dp,
+                    onDismissRequest = { showAvatarPreview = false }
+                )
+            }
+
+            Spacer(modifier = Modifier.width(20.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        user.fullname ?: "No Name", 
+                        style = MaterialTheme.typography.headlineSmall, 
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                }
+                Text(user.username, style = MaterialTheme.typography.bodyMedium, color = BrandBlue, fontWeight = FontWeight.Medium)
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusBadge(user.status)
+                    VerificationBadge(user.verification_status)
+                }
+            }
+        }
+
+        // --- TABS ---
+        AnimatedContentTabs(
+            tabs = UserTabs.entries.toTypedArray(),
+            selectedTab = selectedTab,
+            onTabSelected = { selectedTab = it },
+            labelProvider = { it.label }
+        ) { tab ->
+            when (tab) {
+                UserTabs.PERINFO -> {
+                    DetailSection("Personal Information") {
+                        if (isEditable) {
+                            AppTextField(value = fullname, onValueChange = { fullname = it }, label = "Full Name", placeholder = "Enter full name")
+                            AppTextField(value = email, onValueChange = { email = it }, label = "Email Address", placeholder = "Enter email", keyboardType = KeyboardType.Email)
+                            AppTextField(value = phoneNumber, onValueChange = { phoneNumber = it }, label = "Phone Number", placeholder = "Enter phone")
+                            AppTextField(value = dob, onValueChange = { dob = it }, label = "Date of Birth", placeholder = "YYYY-MM-DD")
+                            HorizontalDivider(modifier = Modifier.fillMaxWidth())
+                            AppTextField(value = password, onValueChange = { password = it }, label = "New Password", placeholder = "leave empty for no change")
+                        } else {
+                            DetailRow("Full Name", user.fullname ?: "—")
+                            DetailRow("Email Address", user.email ?: "—")
+                            DetailRow("Phone Number", user.phone_number ?: "—")
+                            DetailRow("Date of Birth", user.date_of_birth ?: "—")
+                            DetailRow("Registration Date", "$formattedDate at $formattedTime", isLastRow = true)
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Tabs
-                var selectedTab by remember { mutableStateOf(0) }
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    divider = {}
-                ) {
-                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                        Text("Profile", modifier = Modifier.padding(vertical = 12.dp), fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal)
-                    }
-                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                        Text("Activity", modifier = Modifier.padding(vertical = 12.dp), fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal)
-                    }
-                    Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
-                        Text("Achievements", modifier = Modifier.padding(vertical = 12.dp), fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Section: Personal Information
-                DetailSection("Personal Information") {
-                    DetailRow("Full Name", user.fullname ?: "-")
-                    DetailRow("Username", user.username)
-                    DetailRow("Email", user.email ?: "-")
-                    DetailRow("Phone Number", user.phone_number ?: "-")
-                    DetailRow("Date of Birth", user.date_of_birth ?: "-")
-                    DetailRow("Date Joined", "${formattedDate} at ${formattedTime} " ?: "-")
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Section: Academic Information
-                DetailSection("Academic Information") {
-                    DetailRow("Status", user.status)
-                    DetailRow("Verification Status", user.verification_status)
-                    DetailRow("Group", user.group ?: "-")
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Section: Additional Information
-                DetailSection("Additional Information") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Avatar", color = Color.Gray, fontSize = 14.sp)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(Color.LightGray))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("View Avatar", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                UserTabs.ACADINFO -> {
+                    DetailSection("Academic Profile") {
+                        if (isEditable) {
+                            FilterDropdown(
+                                label = "Assign Role/Status",
+                                options = listOf("Student", "Teacher", "Admin", "Guest"),
+                                selectedOption = status,
+                                onOptionSelected = { status = it }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
-                    }
-                    DetailRow("Last Login", "15 Jun 2026, 09:20 AM")
-                }
-
-                Spacer(modifier = Modifier.height(40.dp))
-            }
-
-            // Footer Actions
-            Surface(
-                tonalElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {},
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Edit User", fontSize = 13.sp)
-                    }
-                    OutlinedButton(
-                        onClick = {},
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Change Status", fontSize = 13.sp)
-                    }
-                    OutlinedButton(
-                        onClick = onDelete,
-                        modifier = Modifier.weight(0.8f).height(44.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete", fontSize = 13.sp)
+                        DetailRow("Primary Role", user.status)
+                        DetailRow("Verification", user.verification_status)
+                        DetailRow("Assigned Group", user.group ?: "Not Assigned", isLastRow = true)
                     }
                 }
             }

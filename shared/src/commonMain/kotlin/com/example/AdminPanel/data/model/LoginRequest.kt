@@ -8,6 +8,5 @@ data class LoginRequest(
 
     val username: String,
     val password: String,
-    @SerialName("device_token")
-    val deviceToken: String? = null
+    val device_token: String
 )

@@ -9,7 +9,7 @@ data class LoginResponse(
     val message: String,
 
     val token: String,
-
+    val refresh_token: String,
     val status: String,
 
     @SerialName("verification_status")

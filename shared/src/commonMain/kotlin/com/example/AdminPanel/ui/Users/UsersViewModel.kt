@@ -94,6 +94,47 @@ class UsersViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(selectedUser = user)
     }
 
+    fun approveUser(userId: String) {
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
+        viewModelScope.launch {
+            try {
+                val response = api.verifyUser(userId, "approve")
+                if (response.error != null) {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, error = response.error)
+                } else {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, actionSuccess = true)
+                    loadUsers()
+                    // If the selected user was the one approved, update it
+                    if (_uiState.value.selectedUser?.id == userId) {
+                        _uiState.value = _uiState.value.copy(selectedUser = response.user)
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
+            }
+        }
+    }
+
+    fun updateUser(userId: String, updates: Map<String, String?>) {
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
+        viewModelScope.launch {
+            try {
+                val response = api.editUser(userId, updates)
+                if (response.error != null) {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, error = response.error)
+                } else {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, actionSuccess = true)
+                    loadUsers()
+                    if (_uiState.value.selectedUser?.id == userId) {
+                        _uiState.value = _uiState.value.copy(selectedUser = response.user)
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
+            }
+        }
+    }
+
     fun deleteUser(userId: String) {
         _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
         viewModelScope.launch {
