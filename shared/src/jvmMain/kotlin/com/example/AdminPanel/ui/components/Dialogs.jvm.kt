@@ -5,15 +5,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,12 +27,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.res.useResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowSize
 import androidx.compose.ui.window.rememberDialogState
+import androidx.compose.ui.window.rememberWindowState
 import coil3.compose.AsyncImage
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -40,16 +51,26 @@ actual fun ImagePreviewDialog(
     width: Dp,
     height: Dp
 ) {
-    val dialogState = rememberDialogState(width = width, height = height)
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    DialogWindow(
+
+    var dialogState = rememberWindowState(width = width, height = height)
+
+    val customIcon = try {
+        useResource("sejong_logo.png") { inputStream ->
+            BitmapPainter(loadImageBitmap(inputStream))
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    Window(
         onCloseRequest = onDismissRequest,
         state = dialogState,
         title = title,
-        undecorated = true,
-        transparent = true
+        icon = customIcon
+
     ) {
         Box(
             modifier = Modifier
@@ -99,21 +120,41 @@ actual fun ImagePreviewDialog(
                     modifier = Modifier.fillMaxSize(0.9f)
                 )
             }
+//            Row(
+//                modifier = Modifier
+//                    .align(Alignment.TopEnd)
+//            )
+//            {
+//                // Floating Custom Close Button
+//                IconButton(
+//                    onClick = {isFullSize = !isFullSize},
+//                    modifier = Modifier
+//                        .padding(16.dp)
+//                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+//                ) {
+//                    Icon(
+//                        imageVector = Icons.Default.AccountBox,
+//                        contentDescription = "Big",
+//                        tint = Color.White
+//                    )
+//                }
+//
+//                IconButton(
+//                    onClick = onDismissRequest,
+//                    modifier = Modifier
+//                        .padding(16.dp)
+//                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+//                ) {
+//                    Icon(
+//                        imageVector = Icons.Default.Close,
+//                        contentDescription = "Close",
+//                        tint = Color.White
+//                    )
+//                }
+//            }
 
-            // Floating Custom Close Button
-            IconButton(
-                onClick = onDismissRequest,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White
-                )
-            }
+
+
         }
     }
 }

@@ -20,7 +20,12 @@ import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
 import com.example.AdminPanel.ui.theme.BrandBlue
+import com.example.AdminPanel.ui.theme.BrandRed
 import com.example.AdminPanel.ui.theme.Success
+import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.core.PickerMode
+import io.github.vinceglb.filekit.core.PickerType
+import kotlinx.coroutines.launch
 
 @Composable
 fun UserDetailsPanel(
@@ -41,6 +46,17 @@ fun UserDetailsPanel(
     var dob by remember(user) { mutableStateOf(user.date_of_birth ?: "") }
     var status by remember(user) { mutableStateOf(user.status) }
     var password: String by remember(user) { mutableStateOf("") }
+
+    var selectedImages by remember { mutableStateOf<ByteArray?>(null) }
+    val scope = rememberCoroutineScope()
+
+    val launcher = rememberFilePickerLauncher(
+        type = PickerType.Image, mode = PickerMode.Single
+    ) { image ->
+        if (image != null) {
+            scope.launch { selectedImages =  image.readBytes() }
+        }
+    }
 
     DetailPanelLayout(
         title = "User Details",
@@ -69,6 +85,17 @@ fun UserDetailsPanel(
                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Save Changes", fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = { isEditable = false },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandRed)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Cancel", fontWeight = FontWeight.Bold)
                 }
             } else {
                 if (user.verification_status == "Pending") {
@@ -122,7 +149,12 @@ fun UserDetailsPanel(
                 contentDescription = "Avatar",
                 ImageOnHover = if(isEditable) Icons.Default.Edit else Icons.Default.Check
             ){
-                showAvatarPreview = true
+                if (isEditable){
+                    launcher.launch()
+                }
+                else{
+                    showAvatarPreview = true
+                }
             }
 
             if (showAvatarPreview) {
