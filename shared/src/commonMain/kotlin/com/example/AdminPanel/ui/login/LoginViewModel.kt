@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.AdminPanel.data.getConnectivityService
 import com.example.AdminPanel.data.api.AuthApi
-import com.example.AdminPanel.data.model.ErrorResponse
+import com.example.AdminPanel.data.model.simpleMessageResponse
 import com.example.AdminPanel.data.model.LoginResponse
 import com.example.AdminPanel.data.network.HttpClientFactory
 import com.example.AdminPanel.data.session.SessionManager
@@ -87,7 +87,7 @@ class LoginViewModel : ViewModel() {
                         )
                     }
                     HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized -> {
-                        val errorResponse = response.body<ErrorResponse>()
+                        val errorResponse = response.body<simpleMessageResponse>()
                         println("Got a bad request: ${errorResponse}")
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,

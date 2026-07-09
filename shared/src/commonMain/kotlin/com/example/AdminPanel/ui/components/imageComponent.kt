@@ -23,7 +23,7 @@ import coil3.compose.AsyncImage
 
 @Composable
 fun HoverableImage(
-    avatarUrl: String?,
+    avatarUrl: Any?,
     Mymodifier: Modifier,
     contentDescription: String,
     ImageOnHover: ImageVector,

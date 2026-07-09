@@ -3,6 +3,7 @@ package com.example.AdminPanel.data.api
 import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.data.model.UserListResponse
 import com.example.AdminPanel.data.model.UserResponse
+import com.example.AdminPanel.data.model.simpleMessageResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
@@ -47,6 +48,20 @@ class UserApi(private val client: HttpClient) {
         return client.post("users/admin/verify/$cleanId/") {
             contentType(ContentType.Application.Json)
             setBody(mapOf("action" to action))
+        }.body()
+    }
+
+    suspend fun emailVerify(email: String, code: String): simpleMessageResponse {
+        return client.post("users/register/verify/") {
+            contentType(ContentType.Application.Json)
+            setBody(mapOf("email" to email, "code" to code))
+        }.body()
+    }
+
+    suspend fun resendVerificationCode(email: String): simpleMessageResponse {
+        return client.post("users/register/resend-code/") {
+            contentType(ContentType.Application.Json)
+            setBody(mapOf("email" to email))
         }.body()
     }
 

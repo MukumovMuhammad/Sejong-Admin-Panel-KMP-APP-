@@ -8,6 +8,7 @@ import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.data.network.HttpClientFactory
 import com.example.AdminPanel.data.utills.FilterQuery
 import com.example.AdminPanel.data.utills.applyGlobalFilter
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 data class UsersUiState(
     val users: List<User> = emptyList(),
     val isLoading: Boolean = false,
+    val isUserDataLoading: Boolean = false,
 
     val error: String? = null,
     val selectedUser: User? = null,
@@ -31,7 +33,10 @@ data class UsersUiState(
     val pendingCount: Int = 0,
     val usersGroups: List<String> = emptyList(),
     val isActionLoading: Boolean = false,
-    val actionSuccess: Boolean = false
+    val actionSuccess: Boolean = false,
+    val message: String? = null,
+    val showCodeVerificationWindow: Boolean = false,
+    val verificationEmail: String? = null
 )
 
 class UsersViewModel : ViewModel() {
@@ -39,6 +44,8 @@ class UsersViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(UsersUiState())
     val uiState: StateFlow<UsersUiState> = _uiState.asStateFlow()
+
+    private var loadUserJob: Job? = null
 
     val filterQuery = MutableStateFlow(FilterQuery())
 
@@ -84,6 +91,34 @@ class UsersViewModel : ViewModel() {
     }
 
 
+    fun loadUser(userid: String){
+        println("Loading user ${userid}")
+        loadUserJob?.cancel()
+        loadUserJob = viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUserDataLoading = true, error = null)
+            try {
+                val response = api.getUser(userid)
+                println("UserViewModel: Got a user data! ${response}")
+                _uiState.value = _uiState.value.copy(
+                    selectedUser = response.user,
+                    isUserDataLoading = false
+                )
+            } catch (e: Exception) {
+                println("Got some errors Loading User data! ${e.message}")
+                e.message?.let {
+                    if (it.contains("StandaloneCoroutine"))
+                    {
+                        _uiState.value = _uiState.value.copy( isUserDataLoading = false)
+                    }
+                    else{
+                        _uiState.value = _uiState.value.copy( isUserDataLoading = false, error = e.message)
+                    }
+                }
+            }
+        }
+    }
+
+
 
 
     fun updateFilter(update: (FilterQuery) -> FilterQuery) {
@@ -91,6 +126,14 @@ class UsersViewModel : ViewModel() {
     }
 
     fun selectUser(user: User?) {
+        if (user == null){
+            loadUserJob?.cancel()
+            _uiState.value = _uiState.value.copy(
+                selectedUser = user,
+                isUserDataLoading = false,
+                isLoading = false
+            )
+        }
         _uiState.value = _uiState.value.copy(selectedUser = user)
     }
 
@@ -130,6 +173,40 @@ class UsersViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isActionLoading = false, showCodeVerificationWindow = false ,error = e.message)
+            }
+        }
+    }
+
+    fun emailUserVerify(email: String, code: String){
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
+        viewModelScope.launch {
+            try {
+                val response = api.emailVerify(email, code)
+                if (response.error != null) {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, error = response.error)
+                } else {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, actionSuccess = true, message = response.message )
+                    // Hide verification window on success if needed, or let the user see success message
+                    _uiState.value = _uiState.value.copy(showCodeVerificationWindow = false)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
+            }
+        }
+    }
+
+    fun resendVerificationCode(email: String) {
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
+        viewModelScope.launch {
+            try {
+                val response = api.resendVerificationCode(email)
+                if (response.error != null) {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, error = response.error)
+                } else {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, actionSuccess = true, message = response.message)
+                }
+            } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
             }
         }
@@ -153,5 +230,12 @@ class UsersViewModel : ViewModel() {
 
     fun resetActionState() {
         _uiState.value = _uiState.value.copy(error = null, actionSuccess = false, isActionLoading = false)
+    }
+
+    fun setShowCodeVerificationWindow(show: Boolean, email: String? = null) {
+        _uiState.value = _uiState.value.copy(
+            showCodeVerificationWindow = show,
+            verificationEmail = email ?: _uiState.value.verificationEmail
+        )
     }
 }

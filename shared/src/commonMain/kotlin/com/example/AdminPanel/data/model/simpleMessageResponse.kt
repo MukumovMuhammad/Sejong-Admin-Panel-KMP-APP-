@@ -3,6 +3,7 @@ package com.example.AdminPanel.data.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ErrorResponse(
-    val error: String
+data class simpleMessageResponse(
+    val message: String? = null,
+    val error: String? = null
 )

@@ -40,6 +40,30 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit, isMobile: 
     val uiState by viewModel.uiState.collectAsState()
     val sidebarWidth by animateDpAsState(if (uiState.isSidebarExpanded) 250.dp else 80.dp)
 
+    // Persistent ViewModels for multi-window/multi-tab persistence
+    val usersViewModel: UsersViewModel = viewModel(
+        key = "persistent_users_vm",
+        factory = viewModelFactory {
+            initializer { UsersViewModel() }
+        }
+    )
+
+    val usersUiState by usersViewModel.uiState.collectAsState()
+
+    // Global Verification Dialog - lives as long as AdminPanelScreen is composed
+    if (usersUiState.showCodeVerificationWindow) {
+        CodeVerificationDialog(
+            title = "Verify code for email:",
+            message = "Please enter 6 digit code for ${usersUiState.verificationEmail}",
+            viewModel = usersViewModel,
+            onDismissRequest = { usersViewModel.setShowCodeVerificationWindow(false) },
+            confirmText = "Confirm",
+            dismissText = "Cancel",
+            width = 500.dp,
+            height = 400.dp
+        )
+    }
+
     // 1. Adaptive Root Conditional Router
     if (isMobile) {
         MobileAdminLayout(
@@ -49,7 +73,7 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit, isMobile: 
         ) {
             // Mobile Specific Padding Setup
             Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                MainContent(selectedTab = uiState.selectedTab, onLogOut = onLogOut)
+                MainContent(selectedTab = uiState.selectedTab, onLogOut = onLogOut, usersViewModel = usersViewModel)
             }
         }
     } else {
@@ -67,7 +91,7 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit, isMobile: 
 
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-                    MainContent(selectedTab = uiState.selectedTab, onLogOut = onLogOut)
+                    MainContent(selectedTab = uiState.selectedTab, onLogOut = onLogOut, usersViewModel = usersViewModel)
                 }
             }
         }
@@ -76,7 +100,7 @@ fun AdminPanelScreen(viewModel: AdminViewModel, onLogOut: () -> Unit, isMobile: 
 
 
 @Composable
-fun MainContent(selectedTab: AdminTab, onLogOut: ()->Unit){
+fun MainContent(selectedTab: AdminTab, onLogOut: () -> Unit, usersViewModel: UsersViewModel) {
 
     when (selectedTab) {
         AdminTab.Dashboard -> {
@@ -88,11 +112,6 @@ fun MainContent(selectedTab: AdminTab, onLogOut: ()->Unit){
             DashboardContent(dashboardViewModel)
         }
         AdminTab.Users -> {
-            val usersViewModel: UsersViewModel = viewModel(
-                factory = viewModelFactory {
-                    initializer { UsersViewModel() }
-                }
-            )
             UsersContent(usersViewModel)
         }
         AdminTab.PendingApprovals -> PlaceholderContent("Pending Approvals")

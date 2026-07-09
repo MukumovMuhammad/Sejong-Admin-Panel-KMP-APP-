@@ -27,7 +27,7 @@ import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun AppTextField(
-    value: String,
+    value: String?,
     onValueChange: (String) -> Unit,
     label: String,
     placeholder: String,
@@ -69,7 +69,7 @@ fun AppTextField(
 
         OutlinedTextField(
             readOnly = isReadOnly,
-            value = value,
+            value = value.toString(),
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = {

@@ -10,13 +10,14 @@ data class User(
     val fullname: String? = null,
     val email: String? = null,
     val phone_number: String? = null,
-    val date_of_birth: String? = null,
     val status: String,
     val verification_status: String,
     val group: String? = "",
     val group_id: String? = null,
     val avatar: String? = null,
-    val date_joined: String? = null
+    val date_joined: String? = null,
+    val date_of_birth: String? = null,
+    val device_token: String? = null
 ): Filterable{
     override fun matchesSearch(query: String) =
         fullname?.contains(query, true) == true || username.contains(query, true) || email?.contains(query, true) == true

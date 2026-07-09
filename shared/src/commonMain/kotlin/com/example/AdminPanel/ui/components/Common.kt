@@ -26,10 +26,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 
 import androidx.compose.ui.text.style.TextAlign
-import com.example.AdminPanel.ui.theme.BorderColor
 import com.example.AdminPanel.ui.theme.BrandBlue
 import com.example.AdminPanel.ui.theme.BrandBlueDark
-import com.example.AdminPanel.ui.theme.SurfaceColor
 
 
 @Composable
@@ -80,9 +78,10 @@ fun DetailSection(
 @Composable
 fun DetailRow(
     label: String,
-    value: String,
+    value: String?,
     modifier: Modifier = Modifier,
-    isLastRow: Boolean = false
+    isLastRow: Boolean = false,
+    isLoading: Boolean = false
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -96,16 +95,26 @@ fun DetailRow(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF64748B), // Slate 500
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(end = 16.dp)
             )
-            Text(
-                text = value.ifBlank { "—" },
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A), // Midnight Blue
-                textAlign = TextAlign.End,
-                modifier = Modifier.weight(1f)
-            )
+
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Text(
+                    text = if (value.isNullOrEmpty()) "-" else value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF0F172A), // Midnight Blue
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(20.dp)
+                        .shimmerIfMissing(value, isLoading)
+                )
+            }
         }
 
         if (!isLastRow) {
@@ -117,6 +126,7 @@ fun DetailRow(
         }
     }
 }
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)

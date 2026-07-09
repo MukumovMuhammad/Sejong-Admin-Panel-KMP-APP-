@@ -118,37 +118,3 @@ fun StatCard(
 
 
 
-fun Modifier.shimmerLoadingAnimation(
-    isLoading: Boolean,
-    shimmerColor: Color = Color.White.copy(alpha = 0.4f) // Glassy white shine
-): Modifier = composed {
-    if (!isLoading) return@composed this
-
-    // 1. Create an infinite transition loop
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val translateAnim = transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerTranslation"
-    )
-
-    // 2. Build a linear gradient for the glass shine stripe
-    val shimmerColors = listOf(
-        Color.Transparent,
-        shimmerColor,
-        Color.Transparent
-    )
-
-    // 3. Draw the animated gradient over the component background
-    this.background(
-        brush = Brush.linearGradient(
-            colors = shimmerColors,
-            start = Offset(x = translateAnim.value - 300f, y = translateAnim.value - 300f),
-            end = Offset(x = translateAnim.value, y = translateAnim.value)
-        )
-    )
-}

@@ -297,6 +297,7 @@ fun UsersContent(viewModel: UsersViewModel) {
                         user = uiState.selectedUser!!,
                         viewModel = viewModel,
                         onClose = { viewModel.selectUser(null) },
+                        isUserDataLoading = uiState.isUserDataLoading,
                         onDelete = { userToDelete = uiState.selectedUser }
                     )
                 }

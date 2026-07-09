@@ -31,33 +31,66 @@ import kotlinx.coroutines.launch
 fun UserDetailsPanel(
     user: User,
     viewModel: UsersViewModel,
+    isUserDataLoading: Boolean,
     onClose: () -> Unit,
-    onDelete: (User) -> Unit
+    onDelete: (User) -> Unit,
 ) {
     val (formattedDate, formattedTime) = user.date_joined.getFormattedTimeOfPost()
     var selectedTab by remember { mutableStateOf(UserTabs.PERINFO) }
-    var isEditable by remember { mutableStateOf(false) }
+    var isEditable by remember(user.id) { mutableStateOf(false) }
+
     var showAvatarPreview by remember { mutableStateOf(false) }
+    var showEmailWorning by remember { mutableStateOf(false) }
 
+    val updates = remember(user.id) { mutableMapOf<String, String?>() }
     // Editable fields
-    var fullname by remember(user) { mutableStateOf(user.fullname ?: "") }
-    var email by remember(user) { mutableStateOf(user.email ?: "") }
-    var phoneNumber by remember(user) { mutableStateOf(user.phone_number ?: "") }
-    var dob by remember(user) { mutableStateOf(user.date_of_birth ?: "") }
-    var status by remember(user) { mutableStateOf(user.status) }
-    var password: String by remember(user) { mutableStateOf("") }
+    var fullname by remember(user.id) { mutableStateOf(user.fullname) }
+    var email by remember(user.id) { mutableStateOf(user.email) }
+    var phoneNumber by remember(user.id) { mutableStateOf(user.phone_number) }
+    var dob by remember(user.id) { mutableStateOf(user.date_of_birth) }
+    var status by remember(user.id) { mutableStateOf(user.status) }
+    var password: String by remember(user.id) { mutableStateOf("") }
 
-    var selectedImages by remember { mutableStateOf<ByteArray?>(null) }
+    var selectedImage by remember { mutableStateOf<ByteArray?>(null) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(user.id){
+        viewModel.loadUser(user.id)
+    }
+
+
 
     val launcher = rememberFilePickerLauncher(
         type = PickerType.Image, mode = PickerMode.Single
     ) { image ->
         if (image != null) {
-            scope.launch { selectedImages =  image.readBytes() }
+            scope.launch { selectedImage =  image.readBytes() }
         }
     }
 
+    if (showEmailWorning){
+        println("New update data is ${updates}")
+        AppDialog(
+            title = "Change Email?",
+            message = "The email address for ${user.email} will be updated to $email. To apply this change, a 6-digit confirmation code will be sent to the new email address ($email) for verification.",
+            onClose = {showEmailWorning = false},
+            onOkClick = {
+
+                println("The user is edited! New data is ${updates}")
+                viewModel.setShowCodeVerificationWindow(true, email)
+                if (!updates.isNullOrEmpty()) {
+                    viewModel.updateUser(user.id, updates)
+                }
+
+                isEditable = false
+            },
+            confirmText = "Ok",
+            dismissText = "Cancel",
+            isDanger = true
+        )
+    }
+
+    // CodeVerificationDialog moved to AdminPanelScreen
     DetailPanelLayout(
         title = "User Details",
         onClose = onClose,
@@ -65,17 +98,24 @@ fun UserDetailsPanel(
             if (isEditable) {
                 Button(
                     onClick = {
-                        val updates = mutableMapOf<String, String?>()
+
                         if (fullname != user.fullname) updates["fullname"] = fullname
-                        if (email != user.email) updates["email"] = email
+
                         if (phoneNumber != user.phone_number) updates["phone_number"] = phoneNumber
                         if (dob != user.date_of_birth) updates["date_of_birth"] = dob
                         if (status != user.status) updates["status"] = status
-                        if (password.isNullOrEmpty()) updates["password"] = password
+                        if (password.isNotEmpty()) updates["password"] = password
 
+                        if (email != user.email){
+                            showEmailWorning = true
+                            updates["email"] = email
+                            return@Button
+                        }
                         if (updates.isNotEmpty()) {
+                            println("The user is edited! New data is ${updates}")
                             viewModel.updateUser(user.id, updates)
                         }
+
                         isEditable = false
                     },
                     modifier = Modifier.weight(1f).height(44.dp),
@@ -141,7 +181,7 @@ fun UserDetailsPanel(
 
 
             HoverableImage(
-                avatarUrl = user.avatar,
+                avatarUrl = if (selectedImage != null) selectedImage else user.avatar,
                 Mymodifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
@@ -205,11 +245,11 @@ fun UserDetailsPanel(
                             HorizontalDivider(modifier = Modifier.fillMaxWidth())
                             AppTextField(value = password, onValueChange = { password = it }, label = "New Password", placeholder = "leave empty for no change")
                         } else {
-                            DetailRow("Full Name", user.fullname ?: "—")
-                            DetailRow("Email Address", user.email ?: "—")
-                            DetailRow("Phone Number", user.phone_number ?: "—")
-                            DetailRow("Date of Birth", user.date_of_birth ?: "—")
-                            DetailRow("Registration Date", "$formattedDate at $formattedTime", isLastRow = true)
+                            DetailRow("Full Name", user.fullname, isLoading = isUserDataLoading)
+                            DetailRow("Email Address", user.email, isLoading = isUserDataLoading)
+                            DetailRow("Phone Number", user.phone_number, isLoading = isUserDataLoading)
+                            DetailRow("Date of Birth", user.date_of_birth , isLoading = isUserDataLoading)
+                            DetailRow("Registration Date", "$formattedDate at $formattedTime", isLastRow = true, isLoading = isUserDataLoading)
                         }
                     }
                 }

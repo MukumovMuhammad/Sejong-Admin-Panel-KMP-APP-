@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.example.AdminPanel.ui.users.UsersViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -196,4 +197,16 @@ expect fun ImagePreviewDialog(
     title: String,
     width: Dp,
     height: Dp
+)
+
+@Composable
+expect fun CodeVerificationDialog(
+    title: String = "Enter Verification Code",
+    message: String,
+    viewModel: UsersViewModel,
+    onDismissRequest: () -> Unit,
+    confirmText: String = "Verify",
+    dismissText: String = "Cancel",
+    width: Dp = 460.dp,
+    height: Dp = 420.dp
 )
