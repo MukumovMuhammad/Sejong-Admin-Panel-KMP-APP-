@@ -2,6 +2,7 @@ package com.example.AdminPanel.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -81,9 +82,12 @@ fun DetailRow(
     value: String?,
     modifier: Modifier = Modifier,
     isLastRow: Boolean = false,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    onclick: () -> Unit = {}
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier
+        .clickable(enabled = !isLoading, onClick = onclick)
+        .fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -104,6 +108,7 @@ fun DetailRow(
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Text(
+                    
                     text = if (value.isNullOrEmpty()) "-" else value,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -114,6 +119,8 @@ fun DetailRow(
                         .height(20.dp)
                         .shimmerIfMissing(value, isLoading)
                 )
+
+
             }
         }
 

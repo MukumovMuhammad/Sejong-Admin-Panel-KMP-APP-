@@ -6,6 +6,6 @@ enum class AppLanguage(val label: String) {
 }
 
 enum class UserTabs(val label: String){
-    PERINFO("Personal Information"), ACADINFO("Academic Information")
+    PERINFO("Personal Information"), ACADINFO("Academic Information"), DEVICEINFO("Device Information")
 }
 

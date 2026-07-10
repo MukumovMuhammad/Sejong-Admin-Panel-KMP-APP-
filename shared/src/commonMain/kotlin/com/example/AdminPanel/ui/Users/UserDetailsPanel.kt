@@ -13,6 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,7 @@ fun UserDetailsPanel(
     onClose: () -> Unit,
     onDelete: (User) -> Unit,
 ) {
+    val clipboardManager = LocalClipboardManager.current
     val (formattedDate, formattedTime) = user.date_joined.getFormattedTimeOfPost()
     var selectedTab by remember { mutableStateOf(UserTabs.PERINFO) }
     var isEditable by remember(user.id) { mutableStateOf(false) }
@@ -49,10 +52,14 @@ fun UserDetailsPanel(
     var phoneNumber by remember(user.id) { mutableStateOf(user.phone_number) }
     var dob by remember(user.id) { mutableStateOf(user.date_of_birth) }
     var status by remember(user.id) { mutableStateOf(user.status) }
+    var verification_status by remember(user.id) { mutableStateOf(user.verification_status) }
     var password: String by remember(user.id) { mutableStateOf("") }
+    var device_token: String by remember(user.id) { mutableStateOf("") }
 
     var selectedImage by remember { mutableStateOf<ByteArray?>(null) }
     val scope = rememberCoroutineScope()
+
+    
 
     LaunchedEffect(user.id){
         viewModel.loadUser(user.id)
@@ -105,6 +112,8 @@ fun UserDetailsPanel(
                         if (dob != user.date_of_birth) updates["date_of_birth"] = dob
                         if (status != user.status) updates["status"] = status
                         if (password.isNotEmpty()) updates["password"] = password
+                        if (device_token != user.device_token) updates["device_token"] = device_token
+
 
                         if (email != user.email){
                             showEmailWorning = true
@@ -245,11 +254,11 @@ fun UserDetailsPanel(
                             HorizontalDivider(modifier = Modifier.fillMaxWidth())
                             AppTextField(value = password, onValueChange = { password = it }, label = "New Password", placeholder = "leave empty for no change")
                         } else {
-                            DetailRow("Full Name", user.fullname, isLoading = isUserDataLoading)
-                            DetailRow("Email Address", user.email, isLoading = isUserDataLoading)
-                            DetailRow("Phone Number", user.phone_number, isLoading = isUserDataLoading)
-                            DetailRow("Date of Birth", user.date_of_birth , isLoading = isUserDataLoading)
-                            DetailRow("Registration Date", "$formattedDate at $formattedTime", isLastRow = true, isLoading = isUserDataLoading)
+                            DetailRow("Full Name", user.fullname, isLoading = isUserDataLoading) { clipboardManager.setText(AnnotatedString(user.fullname.toString()))}
+                            DetailRow("Email Address", user.email, isLoading = isUserDataLoading){clipboardManager.setText(AnnotatedString(user.email.toString()))}
+                            DetailRow("Phone Number", user.phone_number, isLoading = isUserDataLoading){clipboardManager.setText(AnnotatedString(user.phone_number.toString()))}
+                            DetailRow("Date of Birth", user.date_of_birth , isLoading = isUserDataLoading){clipboardManager.setText(AnnotatedString(user.date_of_birth.toString()))}
+                            DetailRow("Registration Date", "$formattedDate at $formattedTime", isLastRow = true, isLoading = isUserDataLoading){clipboardManager.setText(AnnotatedString(user.date_joined.toString()))}
                         }
                     }
                 }
@@ -263,10 +272,29 @@ fun UserDetailsPanel(
                                 onOptionSelected = { status = it }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
+
+                            FilterDropdown(
+                                label = "Assign Verification",
+                                options = listOf("Pending", "Approved", "Rejected"),
+                                selectedOption = verification_status,
+                                onOptionSelected = { verification_status = it  }
+                            )
+
                         }
-                        DetailRow("Primary Role", user.status)
-                        DetailRow("Verification", user.verification_status)
-                        DetailRow("Assigned Group", user.group ?: "Not Assigned", isLastRow = true)
+                        DetailRow("Primary Role", user.status, isLoading = isUserDataLoading) { clipboardManager.setText(AnnotatedString(user.status.toString())) }
+                        DetailRow("Verification", user.verification_status,isLoading = isUserDataLoading){clipboardManager.setText(AnnotatedString(user.status.toString()))}
+                        DetailRow("Assigned Group", user.group ?: "Not Assigned", isLastRow = true,isLoading = isUserDataLoading){clipboardManager.setText(AnnotatedString(user.group.toString()))}
+                    }
+                }
+                UserTabs.DEVICEINFO -> {
+                    DetailSection("Device Information") {
+
+                        if(isEditable){
+                            AppTextField(value = device_token?: "", onValueChange = { device_token = it }, label = "Device Token", placeholder = "Enter device token")
+                        }
+                        else{
+                            DetailRow("Device Token", user.device_token, isLastRow = true, isLoading = isUserDataLoading) {clipboardManager.setText(AnnotatedString(user.device_token.toString()))}
+                        }
                     }
                 }
             }

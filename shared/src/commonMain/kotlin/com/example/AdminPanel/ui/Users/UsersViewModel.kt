@@ -46,6 +46,7 @@ class UsersViewModel : ViewModel() {
     val uiState: StateFlow<UsersUiState> = _uiState.asStateFlow()
 
     private var loadUserJob: Job? = null
+    private var loadUsersJob: Job? = null
 
     val filterQuery = MutableStateFlow(FilterQuery())
 
@@ -64,8 +65,9 @@ class UsersViewModel : ViewModel() {
     }
 
     fun loadUsers(status: String? = null, verification: String? = null) {
+        loadUsersJob?.cancel()
         println("Loading users!")
-        viewModelScope.launch {
+        loadUsersJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val response = api.getUsers(status = status, verificationStatus = verification)
