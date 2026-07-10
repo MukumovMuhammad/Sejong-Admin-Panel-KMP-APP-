@@ -23,6 +23,8 @@ data class Group(
 
 @Serializable
 data class GroupListResponse(
+    val total: Int = 0,
+    val has_more: Boolean = false,
     val groups: List<Group> = emptyList()
 )
 

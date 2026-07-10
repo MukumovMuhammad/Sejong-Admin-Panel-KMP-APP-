@@ -28,6 +28,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.AdminPanel.ui.ELibrary.ELibraryContent
 import com.example.AdminPanel.ui.ELibrary.ELibraryViewModel
+import com.example.AdminPanel.ui.activitylogs.ActivityLogsContent
+import com.example.AdminPanel.ui.activitylogs.ActivityLogsViewModel
 import com.example.AdminPanel.ui.announcements.AnnouncementsContent
 import com.example.AdminPanel.ui.announcements.AnnouncementsViewModel
 import com.example.AdminPanel.ui.users.UsersContent
@@ -149,7 +151,14 @@ fun MainContent(selectedTab: AdminTab, onLogOut: () -> Unit, usersViewModel: Use
                 }
             )
         }
-        AdminTab.ActivityLogs -> PlaceholderContent("Activity Logs")
+        AdminTab.ActivityLogs -> {
+            val logsViewModel: ActivityLogsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { ActivityLogsViewModel() }
+                }
+            )
+            ActivityLogsContent(logsViewModel)
+        }
     }
 }
 
