@@ -28,10 +28,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.example.AdminPanel.PlatformStorageManager
 import com.example.AdminPanel.data.model.User
+import com.example.AdminPanel.data.network.BASE_URL
+import com.example.AdminPanel.data.network.PdfDownloader
 import com.example.AdminPanel.data.utills.getFormattedTimeOfPost
 import com.example.AdminPanel.ui.components.*
 import com.example.AdminPanel.ui.theme.*
+import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.core.PickerType
+import io.ktor.client.HttpClient
+import kotlinx.coroutines.launch
 
 @Composable
 fun UsersContent(viewModel: UsersViewModel) {
@@ -42,7 +49,19 @@ fun UsersContent(viewModel: UsersViewModel) {
     val filterQuery by viewModel.filterQuery.collectAsState()
 
     var userToDelete by remember { mutableStateOf<User?>(null) }
+    val storageManager = remember { PlatformStorageManager() }
+    val downloader = remember { PdfDownloader(HttpClient(), storageManager) }
 
+    val scope = rememberCoroutineScope()
+
+    val fileLauncher = rememberFilePickerLauncher(type = PickerType.File(listOf("xlsx"))) { file ->
+        if (file != null) {
+            scope.launch { 
+                val bytes = file.readBytes()
+                viewModel.prepareUpload(bytes, file.name)
+            }
+        }
+    }
 
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -76,15 +95,26 @@ fun UsersContent(viewModel: UsersViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp) // 👈 Handles the space between each button perfectly
                 ) {
                     SecondaryButton(
-                        text = "Import Students",
-                        onClick = {},
+                        text = "Import Template",
+                        onClick = {
+                            viewModel.downloadImportTemplate(downloader)
+                        },
+                        modifier = Modifier.width(160.dp),
+                        icon = Icons.Default.Share
+                    )
+
+                    SecondaryButton(
+                        text = "Upload Students",
+                        onClick = {
+                            fileLauncher.launch()
+                        },
                         modifier = Modifier.width(160.dp),
                         icon = Icons.Default.Share
                     )
 
                     PrimaryButton(
                         text = "Add User",
-                        onClick = {},
+                        onClick = { viewModel.setShowCreateUserDialog(true) },
                         modifier = Modifier.width(140.dp),
                         icon = Icons.Default.Add
                     )
@@ -183,10 +213,10 @@ fun UsersContent(viewModel: UsersViewModel) {
                         TextButton(
                             onClick = {
                                 viewModel.updateFilter{it.copy(
-                                    group = "All Groups",
+                                    group = "",
                                     search = "",
-                                    category = "All status",
-                                    subCategory = "All verifications"
+                                    category = "",
+                                    subCategory = ""
                                 )}
                             }
                         ) {
@@ -320,11 +350,30 @@ fun UsersContent(viewModel: UsersViewModel) {
             )
         }
 
+        if (uiState.pendingUploadFile != null) {
+            AppDialog(
+                title = "Confirm Upload",
+                message = "Do you want to upload the file '${uiState.pendingUploadFileName}' to import students?",
+                onClose = { viewModel.cancelUpload() },
+                onOkClick = { viewModel.confirmUpload() },
+                confirmText = "Yes, Upload",
+                dismissText = "Cancel"
+            )
+        }
+
+        if (uiState.showCreateUserDialog) {
+            CreateUserDialog(
+                onDismiss = { viewModel.setShowCreateUserDialog(false) },
+                onCreate = { newUser -> viewModel.createUser(newUser) }
+            )
+        }
+
 
         ActionStatusDialog(
             isLoading = uiState.isActionLoading,
             isSuccess = uiState.actionSuccess,
             error = uiState.error,
+            message = uiState.message,
             onDismiss = { viewModel.resetActionState() }
         )
 

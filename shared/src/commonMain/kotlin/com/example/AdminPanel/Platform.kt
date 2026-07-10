@@ -11,4 +11,5 @@ expect fun getPlatform(): Platform
 expect class PlatformStorageManager() {
     suspend fun savePdf(fileName: String, bytes: ByteArray): String?
     suspend fun savePdfWithDialog(suggestedName: String, bytes: ByteArray): String?
+    suspend fun saveXlsxWithDialog(suggestedName: String, bytes: ByteArray): String?
 }

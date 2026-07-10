@@ -6,6 +6,7 @@ import com.example.AdminPanel.data.api.UserApi
 import com.example.AdminPanel.data.model.Announcement
 import com.example.AdminPanel.data.model.User
 import com.example.AdminPanel.data.network.HttpClientFactory
+import com.example.AdminPanel.data.network.PdfDownloader
 import com.example.AdminPanel.data.utills.FilterQuery
 import com.example.AdminPanel.data.utills.applyGlobalFilter
 import kotlinx.coroutines.Job
@@ -36,7 +37,11 @@ data class UsersUiState(
     val actionSuccess: Boolean = false,
     val message: String? = null,
     val showCodeVerificationWindow: Boolean = false,
-    val verificationEmail: String? = null
+    val verificationEmail: String? = null,
+    val isDownloadLoading: Boolean = false,
+    val pendingUploadFile: ByteArray? = null,
+    val pendingUploadFileName: String? = null,
+    val showCreateUserDialog: Boolean = false
 )
 
 class UsersViewModel : ViewModel() {
@@ -47,6 +52,7 @@ class UsersViewModel : ViewModel() {
 
     private var loadUserJob: Job? = null
     private var loadUsersJob: Job? = null
+
 
     val filterQuery = MutableStateFlow(FilterQuery())
 
@@ -137,6 +143,55 @@ class UsersViewModel : ViewModel() {
             )
         }
         _uiState.value = _uiState.value.copy(selectedUser = user)
+    }
+
+    fun changeUserAvatar(userId: String, file: ByteArray) {
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
+        viewModelScope.launch {
+            try{
+                val response = api.changeUserAvatar(userId, file)
+                if (response.error != null) {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, error = response.error)
+                } else {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, actionSuccess = true, message = response.message ?: "Avatar changed successfully")
+                    loadUser(userId)
+                }
+            }
+            catch (e: Exception){
+                _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
+            }
+        }
+    }
+    fun uploadStudentsByExcel(file: ByteArray) {
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false, pendingUploadFile = null, pendingUploadFileName = null)
+        viewModelScope.launch {
+            try {
+                val response = api.uploadStudentsByExcel(file)
+                if (response.error != null) {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, error = response.error)
+                } else {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, actionSuccess = true, message = response.message ?: "Students imported successfully")
+                    loadUsers()
+                }
+            }
+            catch (e: Exception){
+                _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
+            }
+        }
+    }
+
+    fun prepareUpload(file: ByteArray, fileName: String) {
+        _uiState.value = _uiState.value.copy(pendingUploadFile = file, pendingUploadFileName = fileName)
+    }
+
+    fun cancelUpload() {
+        _uiState.value = _uiState.value.copy(pendingUploadFile = null, pendingUploadFileName = null)
+    }
+
+    fun confirmUpload() {
+        uiState.value.pendingUploadFile?.let {
+            uploadStudentsByExcel(it)
+        }
     }
 
     fun approveUser(userId: String) {
@@ -231,7 +286,7 @@ class UsersViewModel : ViewModel() {
     }
 
     fun resetActionState() {
-        _uiState.value = _uiState.value.copy(error = null, actionSuccess = false, isActionLoading = false)
+        _uiState.value = _uiState.value.copy(error = null, actionSuccess = false, isActionLoading = false, message = null)
     }
 
     fun setShowCodeVerificationWindow(show: Boolean, email: String? = null) {
@@ -239,5 +294,71 @@ class UsersViewModel : ViewModel() {
             showCodeVerificationWindow = show,
             verificationEmail = email ?: _uiState.value.verificationEmail
         )
+    }
+
+    fun setShowCreateUserDialog(show: Boolean) {
+        _uiState.value = _uiState.value.copy(showCreateUserDialog = show)
+    }
+
+    fun createUser(user: User) {
+        _uiState.value = _uiState.value.copy(isActionLoading = true, error = null, actionSuccess = false)
+        viewModelScope.launch {
+            try {
+                val response = api.createUser(user)
+                if (response.error != null) {
+                    _uiState.value = _uiState.value.copy(isActionLoading = false, error = response.error)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isActionLoading = false, 
+                        actionSuccess = true, 
+                        showCreateUserDialog = false,
+                        message = response.message ?: "User created successfully"
+                    )
+                    loadUsers()
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isActionLoading = false, error = e.message)
+            }
+        }
+    }
+
+    fun downloadImportTemplate(downloader: PdfDownloader) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                isDownloadLoading = true,
+                isActionLoading = true, // Use global overlay
+                error = null,
+                actionSuccess = false
+            )
+            try {
+                // Use the API to get bytes first to ensure auth token is used
+                val bytes = api.downloadImportTemplate()
+                val cleanFileName = "students_import_template"
+                
+                // Then save it via the platform dialog
+                val savedPath = downloader.saveXlsxWithDialog(cleanFileName, bytes)
+                
+                if (savedPath != null) {
+                    _uiState.value = _uiState.value.copy(
+                        isDownloadLoading = false,
+                        isActionLoading = false,
+                        actionSuccess = true,
+                        message = "Template saved successfully to: $savedPath"
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isDownloadLoading = false,
+                        isActionLoading = false,
+                        error = "Download cancelled or failed to save."
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isDownloadLoading = false,
+                    isActionLoading = false,
+                    error = "Failed to download: ${e.message}"
+                )
+            }
+        }
     }
 }

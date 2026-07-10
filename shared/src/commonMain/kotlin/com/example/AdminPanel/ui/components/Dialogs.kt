@@ -140,6 +140,7 @@ fun ActionStatusDialog(
     isLoading: Boolean,
     isSuccess: Boolean,
     error: String?,
+    message: String? = null,
     onDismiss: () -> Unit
 ) {
     if (isLoading || isSuccess || error != null) {
@@ -167,6 +168,9 @@ fun ActionStatusDialog(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Success!", fontWeight = FontWeight.Bold)
+                        if (message != null) {
+                            Text(message, textAlign = TextAlign.Center, fontSize = 12.sp)
+                        }
                         Spacer(modifier = Modifier.height(24.dp))
                         PrimaryButton(text = "OK", onClick = onDismiss, modifier = Modifier.fillMaxWidth())
                     } else if (error != null) {

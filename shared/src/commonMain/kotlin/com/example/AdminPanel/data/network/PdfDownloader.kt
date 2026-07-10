@@ -41,4 +41,22 @@ class PdfDownloader(
             null
         }
     }
+    suspend fun downloadXlsxAndSaveWithDialog(url: String, suggestedName: String): String? {
+        println("Downloading $url")
+        return try {
+            // 1. Fetch bytes directly from network stream
+            val responseBytes = httpClient.get(url).readBytes()
+
+            // 2. Hand off instantly to native dialog code
+
+            storageManager.saveXlsxWithDialog(suggestedName, responseBytes)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun saveXlsxWithDialog(suggestedName: String, bytes: ByteArray): String? {
+        return storageManager.saveXlsxWithDialog(suggestedName, bytes)
+    }
 }

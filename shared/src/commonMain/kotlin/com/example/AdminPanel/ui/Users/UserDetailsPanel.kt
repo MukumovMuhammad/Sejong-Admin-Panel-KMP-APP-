@@ -59,19 +59,21 @@ fun UserDetailsPanel(
     var selectedImage by remember { mutableStateOf<ByteArray?>(null) }
     val scope = rememberCoroutineScope()
 
-    
+
 
     LaunchedEffect(user.id){
         viewModel.loadUser(user.id)
     }
 
-
-
     val launcher = rememberFilePickerLauncher(
         type = PickerType.Image, mode = PickerMode.Single
     ) { image ->
         if (image != null) {
-            scope.launch { selectedImage =  image.readBytes() }
+            scope.launch {
+                selectedImage =  image.readBytes()
+                viewModel.changeUserAvatar(user.id, selectedImage!!)
+                selectedImage = null
+            }
         }
     }
 

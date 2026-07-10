@@ -70,4 +70,37 @@ actual class PlatformStorageManager actual constructor() {
                 null
             }
         }
+
+    actual suspend fun saveXlsxWithDialog(suggestedName: String, bytes: ByteArray): String? = withContext(
+        Dispatchers.IO) {
+        try {
+            val fileChooser = JFileChooser().apply {
+                dialogTitle = "Save xlsx File"
+                selectedFile = File(suggestedName) // Default name suggested to the user
+                fileFilter = FileNameExtensionFilter("xlsx Documents", "xlsx")
+            }
+
+            // Opens the native Desktop "Save As" window
+            val userSelection = fileChooser.showSaveDialog(null)
+
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                var selectedFile = fileChooser.selectedFile
+
+                // Automatically append .pdf extension if the user forgot to type it
+                if (!selectedFile.name.lowercase().endsWith(".xlsx")) {
+                    selectedFile = File(selectedFile.absolutePath + ".xlsx")
+                }
+
+                selectedFile.writeBytes(bytes)
+                println("Selected file path: ${selectedFile.absolutePath}")
+                selectedFile.absolutePath
+
+            } else {
+                null // User cancelled the dialog
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }

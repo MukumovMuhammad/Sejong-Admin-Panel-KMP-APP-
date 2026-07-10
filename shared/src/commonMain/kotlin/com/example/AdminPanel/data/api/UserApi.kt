@@ -7,7 +7,11 @@ import com.example.AdminPanel.data.model.simpleMessageResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlin.contracts.SimpleEffect
 
 class UserApi(private val client: HttpClient) {
 
@@ -73,9 +77,37 @@ class UserApi(private val client: HttpClient) {
         }.body()
     }
 
-    // Assuming delete exists based on UI
-    suspend fun deleteUser(userId: String): UserResponse {
+    suspend fun uploadStudentsByExcel(file: ByteArray): simpleMessageResponse {
+        return client.submitFormWithBinaryData(
+            url = "users/admin/students/import/",
+            formData = formData {
+                append("file", file, Headers.build {
+                    append(HttpHeaders.ContentType, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                    append(HttpHeaders.ContentDisposition, "filename=\"import.xlsx\"")
+                })
+            }
+        ).body()
+    }
+
+    suspend fun changeUserAvatar(userId: String, file: ByteArray): simpleMessageResponse {
         val cleanId = userId.removePrefix("users/")
-        return client.delete("users/admin/users/$cleanId/").body()
+        return client.submitFormWithBinaryData(
+            url = "users/admin/users/$cleanId/avatar/",
+            formData = formData {
+                append("avatar", file, Headers.build {
+                    append(HttpHeaders.ContentType, "image/png")
+                    append(HttpHeaders.ContentDisposition, "filename=\"avatar.png\"")
+                })
+            }
+        ).body()
+    }
+
+    suspend fun downloadImportTemplate(): ByteArray {
+        return client.get("users/admin/students/import/template/").readBytes()
+    }
+    // Assuming delete exists based on UI
+    suspend fun deleteUser(userId: String): simpleMessageResponse {
+        val cleanId = userId.removePrefix("users/")
+        return client.delete("users/admin/users/$cleanId/delete/").body()
     }
 }
